@@ -1,0 +1,45 @@
+Package: OmicsProcessing
+Type: Package
+Title: OmicsProcessing
+Version: 0.0.1
+Date: 2025-03-03
+Authors@R: c(
+    person("Vivian", "Viallon", role = c("aut")),
+    person("Lee", "Matthew", email = "matthewlee821@gmail.com", role = c("aut", "cre")))
+Maintainer: Matthew Lee <matthewlee821@gmail.com>
+Description: A package for the pre-analysis processing of omics data.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+  nlme,
+  lme4,
+  remotes,
+  GGally, 
+  bigutilsr, 
+  car, 
+  cowplot, 
+  doParallel, 
+  foreach,
+  ggplot2, 
+  impute, 
+  imputeLCMD, 
+  missForest,
+  missMethods, 
+  pcaMethods, 
+  reshape2, 
+  rlang, 
+  tibble, 
+  tidyr,
+  tidyselect,
+  dplyr,
+  magrittr,
+  grDevices,
+  stats
+Remotes:
+  JoeRothwell/pcpr2,
+  privefl/bigutilsr
+Depends: 
+    R (>= 2.10)
