@@ -43,7 +43,7 @@
 #'   \item Excludes samples with extreme missingness based on a specified threshold.
 #'   \item Imputes missing values using various methods.
 #'   \item Transforms the data using specified methods.
-#'   \item Excludes outlying samples and features using PCA and LOF.
+#'   \item Excludes outlying samples using PCA and LOF.
 #'   \item Handles case-control data to ensure matched samples are treated appropriately.
 #'   \item Corrects for plate effects using specified random and fixed effects.
 #'   \item Centers and scales the data if \code{centre_scale} is \code{TRUE}.
@@ -156,7 +156,7 @@ process_data <- function(
     LABEL_centre_scale <- list_transformation$centre_scale
   }
 
-  # outlier exclusion ====
+  # sample outlier exclusion ====
   if(outlier){
     list_outliers <- outlier_pca_lof(df = df,
                                      col_samples= col_samples,
@@ -169,7 +169,6 @@ process_data <- function(
     plot_samples_outlier <- NULL
     id_samples_outlier <- NULL
   }
-
 
   # case-control data ====
   if (case_control) {

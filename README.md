@@ -1,18 +1,18 @@
-# omics-processing
+# OmicsProcessing
 
 ## What
-This package provides a general function `process_data()` for the pre-analysis processing of omics data (e.g., metabolomics/proteomics). This function performs the following processing steps (in order):
+This package provides a general function `process_data()` for the pre-analysis processing of omics data (e.g., metabolomics/proteomics). All processing steps are optional and can be tailored to the users specific requirements. This function performs the following processing steps (in order):
 
 1. Excludes features with extreme missingness based on a specified threshold
 2. Excludes samples with extreme missingness based on a specified threshold
 3. Imputes missing values using various methods
 4. Transforms the data using specified methods
-5. Excludes outlying samples and features using PCA and LOF
+5. Excludes outlying samples using PCA and LOF
 6. Handles case-control data to ensure matched samples are treated appropriately
 7. Corrects for plate effects using specified random and fixed effects
 8. Centers and scales the data
 
-All processing steps are optional and can be tailored to the users specific requirements.
+
 
 ## How
 
