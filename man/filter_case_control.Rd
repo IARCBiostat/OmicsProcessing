@@ -4,16 +4,16 @@
 \alias{filter_case_control}
 \title{Filter Samples Based on Case Control Criteria}
 \usage{
-filter_case_control(df, df_samples, col_case_control, col_samples)
+filter_case_control(df, df_meta_samples, col_case_control, col_samples)
 }
 \arguments{
 \item{df}{A data frame containing feature data where rows represent samples and columns represent features.}
 
-\item{df_samples}{A data frame containing sample metadata with at least the column specified by \code{col_case_control}.}
+\item{df_meta_samples}{A data frame containing sample metadata with at least the column specified by \code{col_case_control}.}
 
-\item{col_case_control}{A string specifying the column name in \code{df_samples} that indicates case control groups.}
+\item{col_case_control}{A string specifying the column name in \code{df_meta_samples} that indicates case control groups.}
 
-\item{col_samples}{A string specifying the column name in \code{df_samples} to use for sample filtering (e.g., ID column).}
+\item{col_samples}{A string specifying the column name in \code{df_meta_samples} to use for sample filtering (e.g., ID column).}
 }
 \value{
 A list containing:

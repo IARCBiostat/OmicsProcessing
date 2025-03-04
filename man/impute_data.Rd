@@ -6,23 +6,23 @@
 \usage{
 impute_data(
   df,
-  df_features = NULL,
+  df_meta_features = NULL,
   imputation_method = "mean",
-  col_LOD = NULL,
-  col_features = NULL
+  col_features = NULL,
+  col_LOD = NULL
 )
 }
 \arguments{
 \item{df}{A data frame with missing values to be imputed.}
 
-\item{df_features}{A data frame containing feature metadata, required for "LOD" imputation.}
+\item{df_meta_features}{A data frame containing feature metadata, required for "LOD" imputation.}
 
 \item{imputation_method}{A character string specifying the imputation method. Valid options are:
 "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored".}
 
-\item{col_LOD}{(Optional) Character name of the column in \code{df_features} containing the limit of detection (LOD) values, required for "LOD" imputation.}
+\item{col_features}{(Optional) Character name of the column in \code{df_meta_features} containing feature names, required for "LOD" imputation.}
 
-\item{col_features}{(Optional) Character name of the column in \code{df_features} containing feature names, required for "LOD" imputation.}
+\item{col_LOD}{(Optional) Character name of the column in \code{df_meta_features} containing the limit of detection (LOD) values, required for "LOD" imputation.}
 }
 \value{
 A data frame (\code{df}) with imputed values.

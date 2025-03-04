@@ -82,8 +82,8 @@ process_data <- function(
   # make df ====
   df <- data %>%
     tibble::column_to_rownames(col_samples)
-  df_samples <- tibble::as_tibble(data_meta_samples)
-  df_features <- tibble::as_tibble(data_meta_features)
+  df_meta_samples <- tibble::as_tibble(data_meta_samples)
+  df_meta_features <- tibble::as_tibble(data_meta_features)
 
   # make labels ====
   labels <- generate_labels(
@@ -111,11 +111,11 @@ process_data <- function(
   if (exclusion_extreme_feature) {
     list_exclude_features <- exclude_features(
       df = df,
-      df_features = df_features,
+      df_meta_features = df_meta_features,
       missing_pct_feature = missing_pct_feature)
 
     df <- list_exclude_features$df
-    df_features <- list_exclude_features$df_features
+    df_meta_features <- list_exclude_features$df_meta_features
     id_features_exclude <- list_exclude_features$id_features_exclude
   }else{
     id_features_exclude <- NULL
@@ -125,11 +125,11 @@ process_data <- function(
   if (exclusion_extreme_sample) {
     list_exclude_samples <- exclude_samples(
       df = df,
-      df_samples = df_samples,
+      df_meta_samples = df_meta_samples,
       missing_pct_sample = missing_pct_sample)
 
     df <- list_exclude_samples$df
-    df_samples <- list_exclude_samples$df_samples
+    df_meta_samples <- list_exclude_samples$df_meta_samples
     id_samples_exclude <- list_exclude_samples$id_samples_exclude
   }else{
     id_samples_exclude <- NULL
@@ -138,7 +138,7 @@ process_data <- function(
   # imputation ====
   if (imputation) {
     df <- impute_data(df = df,
-                      df_features = df_features,
+                      df_meta_features = df_meta_features,
                       imputation_method = imputation_method,
                       col_LOD = col_LOD,
                       col_features = col_features)
@@ -157,9 +157,9 @@ process_data <- function(
   if(outlier){
     list_outliers <- outlier_pca_lof(df = df,
                                      col_samples= col_samples,
-                                     df_samples = df_samples)
+                                     df_meta_samples = df_meta_samples)
     df <- list_outliers$df
-    df_samples <- list_outliers$df_samples
+    df_meta_samples <- list_outliers$df_meta_samples
     plot_samples_outlier <- list_outliers$plot_samples_outlier
     id_samples_outlier <- list_outliers$id_samples_outlier
   }else{
@@ -170,11 +170,11 @@ process_data <- function(
   # case-control data ====
   if (case_control) {
     list_casecontrol <- filter_case_control(df = df,
-                                            df_samples = df_samples,
+                                            df_meta_samples = df_meta_samples,
                                             col_case_control = col_case_control,
                                             col_samples = col_samples)
     df <- list_casecontrol$df
-    df_samples <- list_casecontrol$df_samples
+    df_meta_samples <- list_casecontrol$df_meta_samples
     id_samples_casecontrol <- list_casecontrol$id_samples_casecontrol
   }else{
     id_samples_casecontrol <- NULL
@@ -193,8 +193,8 @@ process_data <- function(
       tibble::rownames_to_column(var = col_samples) %>%
       {
         list(data_features = .,
-             data_samples = df_samples,
-             data_meta_features = df_features %>%
+             data_samples = df_meta_samples,
+             data_meta_features = df_meta_features %>%
                dplyr::rename(Name = tidyselect::all_of(col_features)))
       }
 
@@ -280,12 +280,12 @@ process_data <- function(
     cat("# returning a list of data, outlier plot, and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
-    return(list(df = df, df_samples = df_samples, df_features = df_features, plot_samples_outlier = plot_samples_outlier, id_exclusions = id_exclusions))
+    return(list(df = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, plot_samples_outlier = plot_samples_outlier, id_exclusions = id_exclusions))
   } else {
     cat("# returning a list of data and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
-    return(list(df = df, df_samples = df_samples, df_features = df_features, id_exclusions = id_exclusions))
+    return(list(df = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, id_exclusions = id_exclusions))
   }
 }
 
@@ -444,15 +444,15 @@ generate_labels <- function(exclusion_extreme_feature,
 #' threshold of missing data percentage in a meta data file.
 #'
 #' @param df A data frame of feature data only
-#' @param df_features A data frame containing metadata for features
+#' @param df_meta_features A data frame containing metadata for features
 #' @param missing_pct_feature Numeric, the threshold (between 0 and 1) for feature missing data exclusion (e.g., 0.2 for 20%).
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded features removed.}
-#' \item{df_features}{The filtered feature metadata with excluded features removed.}
+#' \item{df_meta_features}{The filtered feature metadata with excluded features removed.}
 #'
 #' @export
 exclude_features <- function(df,
-                             df_features = NULL,
+                             df_meta_features = NULL,
                              missing_pct_feature = NULL) {
   # Initialize the excluded features vector
   excluded_features <- character(0)
@@ -469,16 +469,17 @@ exclude_features <- function(df,
 
   # Remove identified features from main data
   df <- df %>%
-    dplyr::select(-tidyselect::all_of(excluded_features))
+    dplyr::select(-tidyselect::all_of(excluded_features)) %>%
+    as.data.frame()
 
   # Report excluded features
   cat(paste0("## Exclusion features: excluded ", length(excluded_features), " feature(s) \n"))
 
-  # Filter df_features if provided
-  if (!is.null(df_features)) {
-    df_features <- df_features %>%
+  # Filter df_meta_features if provided
+  if (!is.null(df_meta_features)) {
+    df_meta_features <- df_meta_features %>%
       dplyr::filter(!(rownames(.) %in% excluded_features))
-    return(list(df = df, df_features = df_features, id_features_exclude = excluded_features))
+    return(list(df = df, df_meta_features = df_meta_features, id_features_exclude = excluded_features))
   } else {
     return(list(df = df, id_features_exclude = excluded_features))
   }
@@ -490,17 +491,17 @@ exclude_features <- function(df,
 #' threshold of missing data percentage in a meta data file.
 #'
 #' @param df A data frame of feature data only
-#' @param df_samples A data frame containing metadata for samples
+#' @param df_meta_samples A data frame containing metadata for samples
 #' @param missing_pct_sample Numeric, the threshold (between 0 and 1) for sample missing data exclusion (e.g., 0.2 for 20%).
 #'
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded samples removed.}
-#' \item{df_samples}{The filtered sample metadata with excluded samples removed.}
+#' \item{df_meta_samples}{The filtered sample metadata with excluded samples removed.}
 #' \item{excluded_samples}{A vector of the names of samples that were excluded.}
 #'
 #' @export
 exclude_samples <- function(df,
-                            df_samples = NULL,
+                            df_meta_samples = NULL,
                             missing_pct_sample = NULL) {
   # Initialize the excluded samples vector
   excluded_samples <- character(0)
@@ -516,16 +517,26 @@ exclude_samples <- function(df,
   excluded_samples <- names(missing_percentages[missing_percentages > VAR_missing_pct])
 
   # Remove identified samples from main data
-  df <- df[!rownames(df) %in% excluded_samples, ]
+  if (length(excluded_samples) > 0) {  # Check if excluded_samples is not empty
+    df <- df %>%
+      tibble::rownames_to_column("rowname") %>%  # Convert rownames to column
+      dplyr::filter(!rowname %in% excluded_samples) %>%  # Filter using dplyr
+      tibble::column_to_rownames("rowname")  # Convert back to rownames
+  }
+
+  # If df has only one column, convert it to a data frame explicitly
+  if (ncol(df) == 1) {
+    df <- tibble::as_tibble(df)
+  }
 
   # Report excluded samples
   cat(paste0("## Exclusion samples: excluded ", length(excluded_samples), " sample(s) \n"))
 
-  # Filter df_samples if provided
-  if (!is.null(df_samples)) {
-    df_samples <- df_samples %>%
+  # Filter df_meta_samples if provided
+  if (!is.null(df_meta_samples)) {
+    df_meta_samples <- df_meta_samples %>%
       dplyr::filter(!(rownames(.) %in% excluded_samples))
-    return(list(df = df, df_samples = df_samples, id_samples_exclude = excluded_samples))
+    return(list(df = df, df_meta_samples = df_meta_samples, id_samples_exclude = excluded_samples))
   } else {
     return(list(df = df, id_samples_exclude = excluded_samples))
   }
@@ -537,19 +548,20 @@ exclude_samples <- function(df,
 #' `imputation_method`. Supported methods include "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", and "left-censored".
 #'
 #' @param df A data frame with missing values to be imputed.
-#' @param df_features A data frame containing feature metadata, required for "LOD" imputation.
+#' @param df_meta_features A data frame containing feature metadata, required for "LOD" imputation.
 #' @param imputation_method A character string specifying the imputation method. Valid options are:
 #'   "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored".
-#' @param col_LOD (Optional) Character name of the column in `df_features` containing the limit of detection (LOD) values, required for "LOD" imputation.
-#' @param col_features (Optional) Character name of the column in `df_features` containing feature names, required for "LOD" imputation.
+#' @param col_LOD (Optional) Character name of the column in `df_meta_features` containing the limit of detection (LOD) values, required for "LOD" imputation.
+#' @param col_features (Optional) Character name of the column in `df_meta_features` containing feature names, required for "LOD" imputation.
 #'
 #' @return A data frame (`df`) with imputed values.
 #'
 #' @export
-impute_data <- function(df, df_features = NULL,
+impute_data <- function(df,
+                        df_meta_features = NULL,
                         imputation_method = "mean",
-                        col_LOD = NULL,
-                        col_features = NULL) {
+                        col_features = NULL,
+                        col_LOD = NULL) {
 
   # Define valid imputation methods
   valid_imputation_methods <- c("LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored")
@@ -560,15 +572,15 @@ impute_data <- function(df, df_features = NULL,
   }
 
   # Validate LOD-specific parameters
-  if (imputation_method == "LOD" && is.null(col_LOD)) {
-    stop("* The 'col_LOD' parameter must be provided when using 'LOD' imputation method.")
+  if (imputation_method == "LOD" && is.null(df_meta_features) | is.null(col_features) | is.null(col_LOD)) {
+    stop("* df_meta_features, col_features, and col_LOD parameters must be provided when using 'LOD' imputation method.")
   }
 
   # Perform imputation based on selected method
   switch(imputation_method,
          "LOD" = {
            cat("## Imputation using LOD \n")
-           data_LOD <- stats::setNames(df_features[[col_LOD]], df_features[[col_features]])
+           data_LOD <- stats::setNames(df_meta_features[[col_LOD]], df_meta_features[[col_features]])
            replace_with_lod <- function(df, lod_vector) {
              for (col in names(lod_vector)) {
                if (col %in% names(df)) {
@@ -753,10 +765,10 @@ transform_data <- function(df,
 #'
 #' @param df A data frame containing the features to analyze. Rows represent samples
 #'           and columns represent features.
-#' @param col_samples A string specifying the column name in `df_samples` to use for sample filtering.
-#' @param col_features A string specifying the column name in `df_features` to use for feature filtering.
-#' @param df_samples A data frame containing sample data for filtering.
-#' @param df_features A data frame containing feature data for filtering.
+#' @param col_samples A string specifying the column name in `df_meta_samples` to use for sample filtering.
+#' @param col_features A string specifying the column name in `df_meta_features` to use for feature filtering.
+#' @param df_meta_samples A data frame containing sample data for filtering.
+#' @param df_meta_features A data frame containing feature data for filtering.
 #'
 #' @return A list containing the filtered data frame, the sample outlier plot,
 #'         and a vector of IDs of excluded samples.
@@ -766,8 +778,8 @@ transform_data <- function(df,
 #' \dontrun{
 #'   result <- outlier_pca_lof(df, col_samples = "sample_col",
 #'                               col_features = "feature_col",
-#'                               df_samples = df_samples,
-#'                               df_features = df_features)
+#'                               df_meta_samples = df_meta_samples,
+#'                               df_meta_features = df_meta_features)
 #'   print(result$filtered_df)
 #'   print(result$plot_samples)
 #'   print(result$excluded_samples)
@@ -775,8 +787,8 @@ transform_data <- function(df,
 outlier_pca_lof <- function(df,
                             col_samples,
                             col_features,
-                            df_samples,
-                            df_features) {
+                            df_meta_samples,
+                            df_meta_features) {
   cat("# Outlier exclusion using PCA and LOF \n")
 
   # Check for missing values in the dataframe
@@ -818,11 +830,11 @@ outlier_pca_lof <- function(df,
     # Step 4: Exclude Outliers
     if (length(outliers_samples) > 0) {
       df <- df[!rownames(df) %in% id_samples_outlier, ] # Filter data
-      df_samples <- df_samples %>%
+      df_meta_samples <- df_meta_samples %>%
         dplyr::filter(!(!!rlang::sym(col_samples) %in% id_samples_outlier)) # Filter sample data
     }
 
-    return(list(df = df, df_samples = df_samples, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
+    return(list(df = df, df_meta_samples = df_meta_samples, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
   }
 }
 
@@ -833,9 +845,9 @@ outlier_pca_lof <- function(df,
 #' more than two individuals. It also provides information on excluded samples.
 #'
 #' @param df A data frame containing feature data where rows represent samples and columns represent features.
-#' @param df_samples A data frame containing sample metadata with at least the column specified by `col_case_control`.
-#' @param col_case_control A string specifying the column name in `df_samples` that indicates case control groups.
-#' @param col_samples A string specifying the column name in `df_samples` to use for sample filtering (e.g., ID column).
+#' @param df_meta_samples A data frame containing sample metadata with at least the column specified by `col_case_control`.
+#' @param col_case_control A string specifying the column name in `df_meta_samples` that indicates case control groups.
+#' @param col_samples A string specifying the column name in `df_meta_samples` to use for sample filtering (e.g., ID column).
 #'
 #' @return A list containing:
 #'   - `filtered_df`: The filtered feature data frame.
@@ -843,28 +855,28 @@ outlier_pca_lof <- function(df,
 #'   - `excluded_ids`: A vector of IDs of excluded samples.
 #' @export
 filter_case_control <- function(df,
-                                df_samples,
+                                df_meta_samples,
                                 col_case_control,
                                 col_samples) {
   cat("# Filter for case control status \n")
 
-  # Check if col_case_control is provided and exists in df_samples
+  # Check if col_case_control is provided and exists in df_meta_samples
   if (is.null(col_case_control)) {
     stop("* The 'col_case_control' parameter must be provided when 'case_control' is TRUE.")
   }
-  if (!col_case_control %in% colnames(df_samples)) {
-    stop("* The specified 'col_case_control' does not exist in 'df_samples'.")
+  if (!col_case_control %in% colnames(df_meta_samples)) {
+    stop("* The specified 'col_case_control' does not exist in 'df_meta_samples'.")
   }
 
 
   # identify IDs with a single match
-  id_exclusion_matchcaseset <- df_samples %>%
+  id_exclusion_matchcaseset <- df_meta_samples %>%
     dplyr::group_by(!!rlang::sym(col_case_control)) %>%
     dplyr::count() %>%
     dplyr::filter(n != 2) %>%
     dplyr::pull(!!rlang::sym(col_case_control))
 
-  id_exclusion_matchcaseset <- df_samples %>%
+  id_exclusion_matchcaseset <- df_meta_samples %>%
     dplyr::filter(!!rlang::sym(col_case_control) %in% id_exclusion_matchcaseset) %>%
     dplyr::pull(col_samples)
 
@@ -874,12 +886,12 @@ filter_case_control <- function(df,
   df <- df %>%
     dplyr::filter(!rownames(df) %in% id_exclusion_matchcaseset)
 
-  # filter df_samples
-  df_samples <- df_samples %>%
+  # filter df_meta_samples
+  df_meta_samples <- df_meta_samples %>%
     dplyr::filter(!(!!rlang::sym(col_samples) %in% id_exclusion_matchcaseset))
 
   ## Filter feature data
-  df <- df[rownames(df) %in% df_samples[[col_samples]], ]
+  df <- df[rownames(df) %in% df_meta_samples[[col_samples]], ]
 
-  return(list(df = df, df_samples = df_samples, id_samples_casecontrol = id_exclusion_matchcaseset))
+  return(list(df = df, df_meta_samples = df_meta_samples, id_samples_casecontrol = id_exclusion_matchcaseset))
 }
