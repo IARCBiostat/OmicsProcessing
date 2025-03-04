@@ -8,5 +8,6 @@ utils::globalVariables(c(
  "llof",
  "n",
  "plot_features",
-  "plot_samples"
+ "plot_samples",
+ "rowname"
 ))
