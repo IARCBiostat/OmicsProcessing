@@ -571,15 +571,14 @@ impute_data <- function(df,
     stop(paste("* Invalid imputation method. Choose from:", paste(valid_imputation_methods, collapse = ", ")))
   }
 
-  # Validate LOD-specific parameters
-  if (imputation_method == "LOD" && is.null(df_meta_features) | is.null(col_features) | is.null(col_LOD)) {
-    stop("* df_meta_features, col_features, and col_LOD parameters must be provided when using 'LOD' imputation method.")
-  }
-
   # Perform imputation based on selected method
   switch(imputation_method,
          "LOD" = {
            cat("## Imputation using LOD \n")
+           # Check if required arguments are provided for LOD imputation
+           if (is.null(df_meta_features) || is.null(col_features) || is.null(col_LOD)) {
+             stop("* df_meta_features, col_features, and col_LOD parameters must be provided when using 'LOD' imputation method.")
+           }
            data_LOD <- stats::setNames(df_meta_features[[col_LOD]], df_meta_features[[col_features]])
            replace_with_lod <- function(df, lod_vector) {
              for (col in names(lod_vector)) {
