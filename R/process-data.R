@@ -69,7 +69,7 @@ process_data <- function(
 
   # df and VAR checks ====
   ## Check if specified columns exist in the data frames
-  data_check(data = data,
+  OmicsProcessing::data_check(data = data,
                           data_meta_features = data_meta_features,
                           data_meta_samples = data_meta_samples,
                           col_samples = col_samples,
@@ -178,6 +178,19 @@ process_data <- function(
     id_samples_casecontrol <- NULL
   }
 
+  # filter df_meta_samples/features if provided ====
+  if (!is.null(df_meta_samples)) {
+    id <- rownames(df)
+    df_meta_samples <- df_meta_samples %>%
+      dplyr::filter(!!rlang::sym(col_samples) %in% id)
+    }
+
+  if (!is.null(df_meta_features)) {
+    id <- names(df)
+    df_meta_features <- df_meta_features %>%
+      dplyr::filter(!!rlang::sym(col_features) %in% id)
+  }
+
   # plate correction ====
   if (plate_correction) {
     cat("# Plate correction \n")
@@ -197,24 +210,24 @@ process_data <- function(
       }
 
     ## transformation
-    list <- normalization_residualMixedModels(
+    df_normalised <- normalization_residualMixedModels(
       list = list,
-      forIdentifier = col_samples, # sample ID
+      identifier = col_samples, # sample ID
       listRandom = cols_listRandom, # variables to model as random effects; effects will be removed
       listFixedToKeep = cols_listFixedToKeep, # variables to model as fixed effects; effects will be kept
       listFixedToRemove = cols_listFixedToRemove, # variables to model as fixed effects; effects will be removed
       HeteroSked = col_HeteroSked) # variable for which heteroscedasticity will be accounted for
 
-    df <- list$data %>%
-      dplyr::select(-tidyselect::all_of(c(cols_listRandom, cols_listFixedToKeep))) %>%
+    df <- df_normalised %>%
       tibble::column_to_rownames(col_samples)
   }
 
   # centre and scale ====
   if (centre_scale) {
     cat("# Centre and scale \n")
-    df <- df %>%
-      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ scale(.)))
+    df1 <- df %>%
+      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ scale(.))) %>%
+      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), as.numeric))
     LABEL_centre_scale <- TRUE
     cat("## data centred and scaled \n")
   }
@@ -251,53 +264,38 @@ process_data <- function(
   }
   cat("### total sample(s) excluded =", total_excluded_samples, "\n")
 
-  # filter df_meta_samples/features if provided ====
-  if (!is.null(df_meta_samples)) {
-    id <- rownames(df)
-    df_meta_samples <- df_meta_samples %>%
-      dplyr::filter(col_samples %in% id)
-  }
-
-  if (!is.null(df_meta_features)) {
-    id <- names(df)
-    df_meta_features <- df_meta_features %>%
-      dplyr::filter(col_features %in% id)
-  }
-
   # save ====
   if(save){
     cat("# Saving to: ", path_out, "\n")
     ## save outlier figure ====
     if(LABEL_outlier){
       cat("## saving outlier plots \n")
-      grDevices::tiff(paste0(path_outliers, "plot-outliers_", LABEL, ".tiff"), width = 1500, height = 1500, units = "px")
-      print(cowplot::plot_grid(
-        GGally::ggmatrix_gtable(plot_samples),
-        GGally::ggmatrix_gtable(plot_features),
-        nrow = 2))
+      grDevices::tiff(paste0(path_outliers, "plot-outliers_", LABEL, ".tiff"), width = 1200, height = 600, units = "px")
+      print(plot_samples_outlier)
       grDevices::dev.off()
     }
+
     ## save excluded IDs ====
     cat("## saving exclusion info \n")
-    saveRDS(object = id_exclusions, file = paste0(path_outliers, "id-exclusions_", LABEL, ".rds"))
+    save(id_exclusions, file = paste0(path_outliers, "id-exclusions_", LABEL, ".rda"))
 
     ## save feature data ====
     cat("## saving feature data \n")
-    df_obj <- df %>%
+    df_processed <- df %>%
       tibble::rownames_to_column(col_samples)
-    saveRDS(object = df_obj, file = paste0(path_out, "data-features_", LABEL, ".rds"))
-  }
+    save(df_processed, file = paste0(path_out, "data-features_", LABEL, ".rda"))
+    }
   # return ====
   if(LABEL_outlier) {
     cat("# returning a list of data, outlier plot, and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
-    return(list(df = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, plot_samples_outlier = plot_samples_outlier, id_exclusions = id_exclusions))
+    return(list(df_features = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, plot_samples_outlier = plot_samples_outlier, id_exclusions = id_exclusions))
   } else {
     cat("# returning a list of data and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
-    return(list(df = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, id_exclusions = id_exclusions))
+    return(list(df_features = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, id_exclusions = id_exclusions))
   }
 }
 
@@ -325,6 +323,7 @@ process_data <- function(
 #'
 #' @return Logical; `TRUE` if all required columns are present, otherwise an error is raised.
 #'
+#'@export
 data_check <- function(
     data,
     data_meta_features,
@@ -387,17 +386,18 @@ data_check <- function(
 #' @return A list of character labels indicating the settings for each parameter.
 #'
 #' @export
-generate_labels <- function(exclusion_extreme_feature,
-                                         missing_pct_feature = NULL,
-                                         exclusion_extreme_sample,
-                                         missing_pct_sample = NULL,
-                                         imputation,
-                                         imputation_method = NULL,
-                                         transformation,
-                                         transformation_method = NULL,
-                                         outlier,
-                                         plate_correction,
-                                         centre_scale) {
+generate_labels <- function(
+    exclusion_extreme_feature,
+    missing_pct_feature = NULL,
+    exclusion_extreme_sample,
+    missing_pct_sample = NULL,
+    imputation,
+    imputation_method = NULL,
+    transformation,
+    transformation_method = NULL,
+    outlier,
+    plate_correction,
+    centre_scale) {
 
   # Create label for extreme feature exclusion
   LABEL_exclusion_extreme_feature <- if (exclusion_extreme_feature) {
@@ -462,8 +462,9 @@ generate_labels <- function(exclusion_extreme_feature,
 #' \item{excluded_features}{A vector of the names of features that were excluded.}
 #'
 #' @export
-exclude_features <- function(df,
-                             missing_pct_feature = NULL) {
+exclude_features <- function(
+    df,
+    missing_pct_feature = NULL) {
   # Initialize the excluded features vector
   excluded_features <- character(0)
 
@@ -502,8 +503,9 @@ exclude_features <- function(df,
 #' \item{excluded_samples}{A vector of the names of samples that were excluded.}
 #'
 #' @export
-exclude_samples <- function(df,
-                            missing_pct_sample = NULL) {
+exclude_samples <- function(
+    df,
+    missing_pct_sample = NULL) {
   # Initialize the excluded samples vector
   excluded_samples <- character(0)
 
@@ -552,11 +554,12 @@ exclude_samples <- function(df,
 #' @return A data frame (`df`) with imputed values.
 #'
 #' @export
-impute_data <- function(df,
-                        df_meta_features = NULL,
-                        imputation_method = "mean",
-                        col_features = NULL,
-                        col_LOD = NULL) {
+impute_data <- function(
+    df,
+    df_meta_features = NULL,
+    imputation_method = "mean",
+    col_features = NULL,
+    col_LOD = NULL) {
 
   # Define valid imputation methods
   valid_imputation_methods <- c("LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored")
@@ -678,17 +681,18 @@ impute_data <- function(df,
 #' \item{centre_scale}{A label indicating whether the data was centered and scaled (TRUE or NA).}
 #' If conditions are not met for the specified transformation method, the original data frame will be returned in the list.
 #' @export
-transform_data <- function(df,
-                           transformation_method) {
+transform_data <- function(
+    df,
+    transformation_method) {
   valid_transformation_methods <- c("InvRank", "Log10", "Log10Capped", "Log10ExclExtremes")
 
-  # Validate transformation method
+  # Validate transformation method ====
   if (is.null(transformation_method) || !(transformation_method %in% valid_transformation_methods)) {
     stop(paste("* Invalid transformation method. Choose from:", paste(valid_transformation_methods, collapse = ", ")))
   }
 
   # Define transformation functions based on method
-  ## InvRank
+  ## InvRank ====
   if (transformation_method == "InvRank") {
     cat("## Transformation using InvRank \n")
     fun_scale <- function(.x) {
@@ -697,8 +701,9 @@ transform_data <- function(df,
     LABEL_transformation <- "InvRank"
     LABEL_centre_scale <- "FALSE"
 
-    ## Log10
-  } else if (transformation_method == "Log10") {
+  }
+  ## Log10 ====
+  else if (transformation_method == "Log10") {
     if (any(df < 0, na.rm = TRUE)) {
       cat("* log10 not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
@@ -709,8 +714,9 @@ transform_data <- function(df,
       LABEL_centre_scale <- "TRUE"
     }
 
-    ## Log10Capped
-  } else if (transformation_method == "Log10Capped") {
+  }
+  ## Log10Capped ====
+  else if (transformation_method == "Log10Capped") {
     if (any(df < 0, na.rm = TRUE)) {
       cat("* Log10Capped not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
@@ -723,9 +729,10 @@ transform_data <- function(df,
       LABEL_transformation <- "Log10Capped"
       LABEL_centre_scale <- "TRUE"
     }
+  }
 
-    ## Log10ExclExtremes
-  } else if (transformation_method == "Log10ExclExtremes") {
+  ## Log10ExclExtremes ====
+  else if (transformation_method == "Log10ExclExtremes") {
     if (any(df < 0, na.rm = TRUE)) {
       cat("* Log10ExclExtremes not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
@@ -740,10 +747,11 @@ transform_data <- function(df,
     }
   }
 
-  # Apply transformation if function defined
+  # Apply transformation if function defined ====
   if (exists("fun_scale")) {
     df <- df %>%
-      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), fun_scale))
+      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), fun_scale)) %>%
+      dplyr::mutate(dplyr::across(dplyr::where(is.numeric), as.numeric))
   }
 
   return(list(df = df, transformation_method = LABEL_transformation, centre_scale = LABEL_centre_scale))
@@ -770,7 +778,8 @@ transform_data <- function(df,
 #'   print(result$plot_samples)
 #'   print(result$excluded_samples)
 #' }
-outlier_pca_lof <- function(df) {
+outlier_pca_lof <- function(
+    df) {
   cat("# Outlier exclusion using PCA and LOF \n")
 
   # Check for missing values in the dataframe
@@ -836,10 +845,11 @@ outlier_pca_lof <- function(df) {
 #'   - `filtered_samples`: The filtered sample data frame.
 #'   - `excluded_ids`: A vector of IDs of excluded samples.
 #' @export
-filter_case_control <- function(df,
-                                df_meta_samples,
-                                col_case_control,
-                                col_samples) {
+filter_case_control <- function(
+    df,
+    df_meta_samples,
+    col_case_control,
+    col_samples) {
   cat("# Filter for case control status \n")
 
   # Check if col_case_control is provided and exists in df_meta_samples

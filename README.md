@@ -13,6 +13,7 @@ This package provides a general function `process_data()` for the pre-analysis p
 8. Centers and scales the data
 
 Requires 3 data frames:
+
 1. feature data
     * column 1 = sample IDs; column 2-N = features
     * example data: `data("data_features")`
@@ -24,16 +25,21 @@ Requires 3 data frames:
     * example data: `data("data_meta_samples")`
     
 Returns a list of:
-1. processed feature dataframe
-2. IDs for extreme sample missingneess
-2. IDs for extreme feaure missingneess
-4. IDs for PCA and LOF outlier samples
-5. plot of PCA and LOF outlier samples
 
-If the argument `save` is `TRUE` then the list objects will be saved using a name that details all the selected options.
+1. `df_features`: processed feature dataframe
+2. `df_meta_samples`: filtered sample meta-data
+3. `df_meta_features`: filteres feature meta-data
+4. `plot_samples_outlier`: figure of PCA/LOF analysis
+5. `id_exclusions`: a list of IDs:
+    * `id_features_exclude`: feature IDs excluded for extreme sample missingness
+    * `id_samples_exclude`: sample IDs excluded for extreme sample missingness
+    * `id_samples_outlier`: sample IDs excluded in PCA/LOF analysis
+    * `id_samples_casecontrol`: sample IDs excluded because a matched case-control was excluded
 
 ## How
-The simplest processing can be achieved for extreme missingness. For example to exclude all features and samples with >10% missingness:
+All arguments are independent and examples are given below. Each function (e.g., `impute_data()`) can be used independently of `process_data()`
+
+### Sample and feature exclusions for >10% missingness
 
 ```
 data_processed <- process_data(
@@ -51,7 +57,7 @@ data_processed <- process_data(
 # returning a list of data and exclusion IDs
 ```
 
-Imputation of missing data can be performed using a number of different methods:
+### Imputation of missing feature data
 
 ```
 > data_processed <- process_data(
@@ -64,7 +70,7 @@ Imputation of missing data can be performed using a number of different methods:
 # returning a list of data and exclusion IDs
 ```
 
-If imputing using LOD or equivalent you must provide a feature meta-data file which contains a column with feature names and a column of LOD or equivalent:
+If imputing using limit of detection (LOD) or equivalent, you must provide a feature meta-data file which contains a column with feature names and a column of LOD or equivalent:
 
 ```
 data_processed <- process_data(
@@ -74,7 +80,8 @@ data_processed <- process_data(
   imputation = TRUE, imputation_method = "LOD")
 ```
 
-Transformations can be applied using different methods:
+### Transformation of feature data
+Ttransformation by all `log10` methods will also perform centering and scaling to a mean of 0
 
 ```
 > data_processed <- process_data(
@@ -87,9 +94,7 @@ Transformations can be applied using different methods:
 # returning a list of data and exclusion IDs
 ```
 
-NOTE: transformation by all log10 methods will also perform centering and scaling to a mean of 0
-
-Sample outlier exclusions based on PCA and LOF can not be performed on missing data.
+### Sample outlier exclusions based on PCA and LOF
 
 ```
 > data_processed <- process_data(
@@ -112,7 +117,7 @@ Sample outlier exclusions based on PCA and LOF can not be performed on missing d
 # returning a list of data, outlier plot, and exclusion IDs
 ```
 
-The outlier function creates a PCA plot where samples are coloured by their LOF. As an example we can introduce an outlier sample by multiplying all feature values for ID_10 by 1.5:
+The outlier function creates a PCA plot where samples are coloured by their LOF. As an example, we can introduce an outlier sample by multiplying all feature values for ID_10 by 1.5:
 
 ```
 > data_features_outlier <- data_features %>%
@@ -138,9 +143,31 @@ The outlier function creates a PCA plot where samples are coloured by their LOF.
 ```
 ![](inst/outlier-example.png)
 
+### Plate correction
+You can perform plate correction by providing sample and feature meta-data files.
+
+```
+data_processed <- process_data(
+  data = data_features, 
+  data_meta_samples = data_meta_samples,
+  col_samples = "ID_sample", 
+  data_meta_features = data_meta_features,
+  col_features = "ID_feature",
+  plate_correction = TRUE, 
+  cols_listRandom = c("batch"), 
+  cols_listFixedToKeep = c("age"), 
+  cols_listFixedToRemove = c("sex"), 
+  col_HeteroSked = NULL)
+```
 
 
-## Why
+
+### Other
+Centering and scaling can be performed using `centre_scale = TRUE`. Centering and scaling is performed for log based transformations at the point of the transformation, regardless of if `centre_scale = TRUE`. 
+
+If you are processing case-control data then you will likely want to ensure excluded samples have their matched samples also excluded. This can be done using `case_control = TRUE` and providing the column name in `data_meta_samples` which has the matching factor, `col_case_control = case_control_match`.
+
+The processed data, the IDs for excluded samples and features and the reasons for exclusions, and the outlier plot can be saved using `save = TRUE` and providing a file path for the processed data (`path_out = path/to/directory/`) and the exclusion data (`path_outliers = path/to/directory/exclusions/`)
 
 ## References
 
@@ -153,4 +180,4 @@ The outlier function creates a PCA plot where samples are coloured by their LOF.
     * Markus M. Breunig, Hans-Peter Kriegel, Raymond T. Ng, and Jörg Sander. 2000. LOF: identifying density-based local outliers. SIGMOD Rec. 29, 2 (June 2000), 93–104. [doi.org/10.1145/335191.335388](https://dl.acm.org/doi/10.1145/335191.335388)
     * Tukey, J. W. Exploratory Data Analysis. (Addison-Wesley Publishing Company, 1977).
     * Hubert, M. and Vandervieren, E., (2008), An adjusted boxplot for skewed distributions, Computational Statistics & Data Analysis, 52, issue 12, p. 5186-5201, [EconPapers.repec.org/RePEc:eee:csdana:v:52:y:2008:i:12:p:5186-5201](https://EconPapers.repec.org/RePEc:eee:csdana:v:52:y:2008:i:12:p:5186-5201).
-3. The implementation of sample exclusions is from the R package [`{bigutilsr}`](https://github.com/privefl/bigutilsr) and is described in detail by Florian Privé in this blog post: [privefl.github.io/blog/detecting-outlier-samples-in-pca/](https://privefl.github.io/blog/detecting-outlier-samples-in-pca/)
+3. The implementation of sample exclusions is from the R package [`{bigutilsr}`](https://github.com/privefl/bigutilsr) and is described in detail by Florian Privé in [this blog post](https://privefl.github.io/blog/detecting-outlier-samples-in-pca/)

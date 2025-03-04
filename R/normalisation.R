@@ -21,7 +21,7 @@
 #'     }}
 #'   \item{data_meta_features}{A p x 3 matrix indicating each feature's Name, Class, and Type.}
 #' }
-#' @param forIdentifier A character vector of strings indicating the names of variables used for unique identification of individuals.
+#' @param identifier A character vector of strings indicating the names of variables used for unique identification of individuals.
 #' @param listRandom A character vector of strings containing variable names modeled as random effects to be removed. If not NULL, should be either of length 1 or contain nested variables.
 #' @param listFixedToKeep A character vector of strings containing variable names modeled as fixed effects to be kept.
 #' @param listFixedToRemove A character vector of strings containing variable names modeled as fixed effects to be removed.
@@ -34,7 +34,7 @@
 #'
 #' @export
 normalization_residualMixedModels <- function(list,
-                                              forIdentifier = c("Study", "Batch", "CaseSet", "Idepic"),
+                                              identifier = c("ID_sample"),
                                               listRandom = NULL,
                                               listFixedToKeep = NULL,
                                               listFixedToRemove = NULL,
@@ -42,24 +42,24 @@ normalization_residualMixedModels <- function(list,
 
   # Convert list of data frames to tibble and unite identifiers ====
   data_features <- tibble::as_tibble(list$data_features) %>%
-    tidyr::unite(IdentifierPipeline, tidyselect::all_of(forIdentifier), sep = "", remove = FALSE) %>%
+    tidyr::unite(IdentifierPipeline, tidyselect::all_of(identifier), sep = "", remove = FALSE) %>%
     dplyr::arrange(IdentifierPipeline)
   data_samples <- tibble::as_tibble(list$data_samples) %>%
-    tidyr::unite(IdentifierPipeline, tidyselect::all_of(forIdentifier), sep = "", remove = FALSE) %>%
+    tidyr::unite(IdentifierPipeline, tidyselect::all_of(identifier), sep = "", remove = FALSE) %>%
     dplyr::arrange(IdentifierPipeline)
   data_meta_features <- tibble::as_tibble(list$data_meta_features)
 
   # Check for consistency between data_features and data_samples ====
   if (sum(data_features$IdentifierPipeline == data_samples$IdentifierPipeline) < nrow(data_features)) {
-    stop("col_samples should be the same in data_features and data_samples")
+    stop("col_samples should be the same in data_features and data_meta_samples")
   }
 
   # Merge data_features with data_samples and select relevant columns ====
-  var.context <- unique(c("IdentifierPipeline", forIdentifier, listRandom, listFixedToKeep, listFixedToRemove))
+  var.context <- unique(c("IdentifierPipeline", identifier, listRandom, listFixedToKeep, listFixedToRemove))
   data <- dplyr::left_join(data_features,
                            data_samples %>%
                              dplyr::select(tidyselect::all_of(var.context)) %>%
-                             dplyr::select(-tidyselect::any_of(forIdentifier)),
+                             dplyr::select(-tidyselect::any_of(identifier)),
                            by = "IdentifierPipeline") %>%
     dplyr::select(tidyselect::all_of(var.context), tidyselect::all_of(colnames(list$data_features)[which(colnames(list$data_features) %in% data_meta_features$Name)]))
 
@@ -90,13 +90,9 @@ normalization_residualMixedModels <- function(list,
   # Finalize output
   colnames(data.context) <- c(var.context, as.character(id_feature))
   data.context <- tibble::as_tibble(data.context) %>%
-    dplyr::arrange(IdentifierPipeline) %>%
-    dplyr::select(-IdentifierPipeline)
-  data_samples <- data_samples %>%
-    dplyr::arrange(IdentifierPipeline) %>%
-    dplyr::select(-IdentifierPipeline)
+    dplyr::select(dplyr::all_of(names(list$data_features)))
 
-  return(list(data = data.context, data_samples = data_samples, data_meta_features = data_meta_features))
+  return(data.context)
 }
 
 #' Compute Residuals Using Mixed Models

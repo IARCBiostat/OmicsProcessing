@@ -6,7 +6,7 @@
 \usage{
 normalization_residualMixedModels(
   list,
-  forIdentifier = c("Study", "Batch", "CaseSet", "Idepic"),
+  identifier = c("ID_sample"),
   listRandom = NULL,
   listFixedToKeep = NULL,
   listFixedToRemove = NULL,
@@ -31,7 +31,7 @@ normalization_residualMixedModels(
 \item{data_meta_features}{A p x 3 matrix indicating each feature's Name, Class, and Type.}
 }}
 
-\item{forIdentifier}{A character vector of strings indicating the names of variables used for unique identification of individuals.}
+\item{identifier}{A character vector of strings indicating the names of variables used for unique identification of individuals.}
 
 \item{listRandom}{A character vector of strings containing variable names modeled as random effects to be removed. If not NULL, should be either of length 1 or contain nested variables.}
 

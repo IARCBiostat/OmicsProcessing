@@ -3,6 +3,7 @@
 export("%>%")
 export(FUNnormalization_residualMixedModels)
 export(calculate_ICC)
+export(data_check)
 export(exclude_features)
 export(exclude_samples)
 export(filter_case_control)
