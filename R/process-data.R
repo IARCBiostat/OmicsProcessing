@@ -9,15 +9,13 @@
 #' @param data_meta_features A data frame containing metadata for the features, including information such as limit of detection and missingness percentage.
 #' @param data_meta_samples A data frame containing metadata for the samples, including information necessary for plate correction and case-control analysis.
 #' @param col_samples A string specifying the column name in \code{data} that contains sample IDs (e.g., \code{"Idepic_Bio"}).
-#' @param col_features A string specifying the column name in \code{data} that contains feature IDs, which should match the column names of \code{data} (e.g., \code{"UNIPROT"}).
+#' @param col_features A string specifying the column name in \code{data_meta_features} that contains feature IDs, which should match the column names of \code{data} (e.g., \code{"UNIPROT"}).
 #' @param save A logical for whether you want to save the feature data, plots, and exclusion info. Default is \code{FALSE}/.
 #' @param path_out A string specifying the output directory where the processed data will be saved.
 #' @param path_outliers A string specifying the output directory where outlier information will be saved.
 #' @param exclusion_extreme_feature A logical flag indicating whether to exclude features with extreme missingness. Default is \code{FALSE}.
-#' @param col_missing_feature A string specifying the column name in \code{data_meta_features} that contains the percentage of missing values for each feature (e.g., \code{"missing_pct"}).
 #' @param missing_pct_feature A numeric value specifying the threshold percentage for missingness above which features will be excluded (e.g., \code{0.9}).
 #' @param exclusion_extreme_sample A logical flag indicating whether to exclude samples with extreme missingness. Default is \code{FALSE}.
-#' @param col_missing_sample A string specifying the column name in \code{data_meta_samples} that contains the percentage of missing values for each sample (e.g., \code{"missing_pct_samples"}).
 #' @param missing_pct_sample A numeric value specifying the threshold percentage for missingness above which samples will be excluded (e.g., \code{0.9}).
 #' @param imputation A logical flag indicating whether imputation should be performed. Default is \code{FALSE}.
 #' @param imputation_method A string specifying the method to use for imputation. Options include \code{"LOD"}, \code{"1/5th"}, \code{"KNN"}, \code{"ppca"}, \code{"median"}, \code{"mean"}, \code{"rf"}, and \code{"left-censored"}.
@@ -52,15 +50,15 @@
 
 process_data <- function(
     data,
-    data_meta_features,
-    data_meta_samples,
+    data_meta_features = NULL,
+    data_meta_samples = NULL,
     col_samples,
-    col_features,
+    col_features = NULL,
     save = FALSE,
-    path_out,
-    path_outliers,
-    exclusion_extreme_feature = FALSE, col_missing_feature = NULL, missing_pct_feature = NULL,
-    exclusion_extreme_sample = FALSE, col_missing_sample = NULL, missing_pct_sample = NULL,
+    path_out = NULL,
+    path_outliers = NULL,
+    exclusion_extreme_feature = FALSE, missing_pct_feature = NULL,
+    exclusion_extreme_sample = FALSE, missing_pct_sample = NULL,
     imputation = FALSE, imputation_method = NULL, col_LOD = NULL,
     transformation = FALSE, transformation_method = NULL,
     outlier = FALSE,
@@ -78,9 +76,7 @@ process_data <- function(
                           col_features = col_features,
                           exclusion_extreme_feature = exclusion_extreme_feature,
                           exclusion_extreme_sample = exclusion_extreme_sample,
-                          col_missing_feature = col_missing_feature,
                           missing_pct_feature = missing_pct_feature,
-                          col_missing_sample = col_missing_sample,
                           missing_pct_sample = missing_pct_sample)
 
   # make df ====
@@ -90,17 +86,18 @@ process_data <- function(
   df_features <- tibble::as_tibble(data_meta_features)
 
   # make labels ====
-  labels <- generate_labels(exclusion_extreme_feature = exclusion_extreme_feature,
-                                         missing_pct_feature = missing_pct_feature,
-                                         exclusion_extreme_sample = exclusion_extreme_sample,
-                                         missing_pct_sample = missing_pct_sample,
-                                         imputation = imputation,
-                                         imputation_method = imputation_method,
-                                         transformation = transformation,
-                                         transformation_method = transformation_method,
-                                         outlier = outlier,
-                                         plate_correction = plate_correction,
-                                         centre_scale = centre_scale)
+  labels <- generate_labels(
+    exclusion_extreme_feature = exclusion_extreme_feature,
+    missing_pct_feature = missing_pct_feature,
+    exclusion_extreme_sample = exclusion_extreme_sample,
+    missing_pct_sample = missing_pct_sample,
+    imputation = imputation,
+    imputation_method = imputation_method,
+    transformation = transformation,
+    transformation_method = transformation_method,
+    outlier = outlier,
+    plate_correction = plate_correction,
+    centre_scale = centre_scale)
 
   LABEL_exclusion_extreme_feature = labels$LABEL_exclusion_extreme_feature
   LABEL_exclusion_extreme_sample = labels$LABEL_exclusion_extreme_sample
@@ -112,11 +109,11 @@ process_data <- function(
 
   # Extreme exclusion features ====
   if (exclusion_extreme_feature) {
-    list_exclude_features <- exclude_features(df = df,
-                                                           df_features = df_features,
-                                                           missing_pct_feature = missing_pct_feature,
-                                                           col_missing_feature = col_missing_feature,
-                                                           col_features = col_features)
+    list_exclude_features <- exclude_features(
+      df = df,
+      df_features = df_features,
+      missing_pct_feature = missing_pct_feature)
+
     df <- list_exclude_features$df
     df_features <- list_exclude_features$df_features
     id_features_exclude <- list_exclude_features$id_features_exclude
@@ -126,11 +123,11 @@ process_data <- function(
 
   # Extreme exclusion samples ====
   if (exclusion_extreme_sample) {
-    list_exclude_samples <- exclude_samples(df = df,
-                                                         df_samples = df_samples,
-                                                         missing_pct_sample = missing_pct_sample,
-                                                         col_missing_sample = col_missing_sample,
-                                                         col_samples = col_samples)
+    list_exclude_samples <- exclude_samples(
+      df = df,
+      df_samples = df_samples,
+      missing_pct_sample = missing_pct_sample)
+
     df <- list_exclude_samples$df
     df_samples <- list_exclude_samples$df_samples
     id_samples_exclude <- list_exclude_samples$id_samples_exclude
@@ -298,34 +295,34 @@ process_data <- function(
 #' It verifies that necessary columns are present based on specified exclusion flags.
 #'
 #' @param data Data frame containing sample data, which must include `col_samples`.
-#' @param data_meta_features Data frame containing feature metadata, which may need to include
-#'        `col_features`, `col_missing_feature`, and `missing_pct_feature` depending on parameters.
-#' @param data_meta_samples Data frame containing sample metadata, which may need to include
-#'        `col_missing_sample` and `missing_pct_sample` depending on parameters.
+#' @param data_meta_features Data frame containing feature metadata, which must include
+#'        `col_features`
+#' @param data_meta_samples Data frame containing sample metadata, which must include
+#'        `col_samples`
 #' @param col_samples Character vector specifying the column name(s) in `data` representing sample IDs.
 #' @param col_features Character string specifying the column name in `data_meta_features` representing
 #'        feature IDs (optional, only checked if provided).
-#' @param exclusion_extreme_feature Logical; if `TRUE`, both `col_missing_feature` and `missing_pct_feature`
+#' @param exclusion_extreme_feature Logical; if `TRUE`, `missing_pct_feature`
 #'        must be provided and exist in `data_meta_features`.
-#' @param exclusion_extreme_sample Logical; if `TRUE`, both `col_missing_sample` and `missing_pct_sample`
+#' @param exclusion_extreme_sample Logical; if `TRUE`, `missing_pct_sample`
 #'        must be provided and exist in `data_meta_samples`.
-#' @param col_missing_feature Character string specifying the column name in `data_meta_features` for
-#'        missing data in features (required if `exclusion_extreme_feature` is `TRUE`).
 #' @param missing_pct_feature Numeric value indicating the acceptable percentage of missing data for features
 #'        (required if `exclusion_extreme_feature` is `TRUE`).
-#' @param col_missing_sample Character string specifying the column name in `data_meta_samples` for
-#'        missing data in samples (required if `exclusion_extreme_sample` is `TRUE`).
 #' @param missing_pct_sample Numeric value indicating the acceptable percentage of missing data for samples
 #'        (required if `exclusion_extreme_sample` is `TRUE`).
 #'
 #' @return Logical; `TRUE` if all required columns are present, otherwise an error is raised.
 #'
-data_check <- function(data, data_meta_features, data_meta_samples,
-                                    col_samples, col_features = NULL,
-                                    exclusion_extreme_feature = FALSE,
-                                    exclusion_extreme_sample = FALSE,
-                                    col_missing_feature = NULL, missing_pct_feature = NULL,
-                                    col_missing_sample = NULL, missing_pct_sample = NULL) {
+data_check <- function(
+    data,
+    data_meta_features,
+    data_meta_samples,
+    col_samples,
+    col_features = NULL,
+    exclusion_extreme_feature = FALSE,
+    exclusion_extreme_sample = FALSE,
+    missing_pct_feature = NULL,
+    missing_pct_sample = NULL) {
 
   # Check if required sample columns exist in data
   required_columns_data <- c(col_samples)
@@ -340,21 +337,15 @@ data_check <- function(data, data_meta_features, data_meta_samples,
 
   # Check if metadata columns exist for feature exclusions
   if (exclusion_extreme_feature) {
-    if (is.null(col_missing_feature) || is.null(missing_pct_feature)) {
-      stop("Both 'col_missing_feature' and 'missing_pct_feature' must be provided when 'exclusion_extreme_feature' is TRUE.")
-    }
-    if (!col_missing_feature %in% colnames(data_meta_features)) {
-      stop("The specified 'col_missing_feature' does not exist in 'data_meta_features'.")
+    if (is.null(missing_pct_feature)) {
+      stop("'missing_pct_feature' must be provided when 'exclusion_extreme_feature' is TRUE.")
     }
   }
 
   # Check if metadata columns exist for sample exclusions
   if (exclusion_extreme_sample) {
-    if (is.null(col_missing_sample) || is.null(missing_pct_sample)) {
-      stop("Both 'col_missing_sample' and 'missing_pct_sample' must be provided when 'exclusion_extreme_sample' is TRUE.")
-    }
-    if (!col_missing_sample %in% colnames(data_meta_samples)) {
-      stop("The specified 'col_missing_sample' does not exist in 'data_meta_samples'.")
+    if (is.null(missing_pct_sample)) {
+      stop("'missing_pct_sample' must be provided when 'exclusion_extreme_sample' is TRUE.")
     }
   }
 
@@ -452,22 +443,17 @@ generate_labels <- function(exclusion_extreme_feature,
 #' This function excludes features from a dataset (`df`) based on a specified
 #' threshold of missing data percentage in a meta data file.
 #'
-#' @param df A data frame containing the main data with features to be filtered.
-#' @param df_features A data frame containing metadata for features, including missingness percentages.
+#' @param df A data frame of feature data only
+#' @param df_features A data frame containing metadata for features
 #' @param missing_pct_feature Numeric, the threshold (between 0 and 1) for feature missing data exclusion (e.g., 0.2 for 20%).
-#' @param col_missing_feature Character, the column name in `df_features` indicating the percentage of missing data per feature.
-#' @param col_features Character, the column name in `df_features` with feature IDs corresponding to columns in `df`.
-#'
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded features removed.}
 #' \item{df_features}{The filtered feature metadata with excluded features removed.}
 #'
 #' @export
-exclude_features <- function(df, df_features,
-                                          missing_pct_feature = NULL,
-                                          col_missing_feature,
-                                          col_features) {
-
+exclude_features <- function(df,
+                             df_features = NULL,
+                             missing_pct_feature = NULL) {
   # Initialize the excluded features vector
   excluded_features <- character(0)
 
@@ -475,23 +461,27 @@ exclude_features <- function(df, df_features,
   VAR_missing_pct <- missing_pct_feature
   cat(paste0("# Exclusion features: excluding features with more than ", VAR_missing_pct * 100, "% missingness \n"))
 
+  # Calculate missingness for each column
+  missing_percentages <- colMeans(is.na(df))
+
   # Identify features to exclude based on missing data threshold
-  excluded_features <- df_features %>%
-    dplyr::filter(.data[[col_missing_feature]] > VAR_missing_pct) %>%
-    dplyr::pull(col_features)
+  excluded_features <- names(missing_percentages[missing_percentages > VAR_missing_pct])
 
   # Remove identified features from main data
   df <- df %>%
     dplyr::select(-tidyselect::all_of(excluded_features))
 
-  # Filter feature metadata to match remaining features in df
-  df_features <- df_features[df_features[[col_features]] %in% colnames(df), ]
-
   # Report excluded features
   cat(paste0("## Exclusion features: excluded ", length(excluded_features), " feature(s) \n"))
 
-  # Return the filtered data, feature metadata, and excluded features
-  return(list(df = df, df_features = df_features, id_features_exclude = excluded_features))
+  # Filter df_features if provided
+  if (!is.null(df_features)) {
+    df_features <- df_features %>%
+      dplyr::filter(!(rownames(.) %in% excluded_features))
+    return(list(df = df, df_features = df_features, id_features_exclude = excluded_features))
+  } else {
+    return(list(df = df, id_features_exclude = excluded_features))
+  }
 }
 
 #' Exclude samples with X missingness
@@ -499,11 +489,9 @@ exclude_features <- function(df, df_features,
 #' This function excludes samples from a dataset (`df`) based on a specified
 #' threshold of missing data percentage in a meta data file.
 #'
-#' @param df A data frame containing the main data with samples to be filtered.
-#' @param df_samples A data frame containing metadata for samples, including missingness percentages.
+#' @param df A data frame of feature data only
+#' @param df_samples A data frame containing metadata for samples
 #' @param missing_pct_sample Numeric, the threshold (between 0 and 1) for sample missing data exclusion (e.g., 0.2 for 20%).
-#' @param col_missing_sample Character, the column name in `df_samples` indicating the percentage of missing data per sample.
-#' @param col_samples Character, the column name in `df_samples` with sample IDs corresponding to row names in `df`.
 #'
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded samples removed.}
@@ -511,11 +499,9 @@ exclude_features <- function(df, df_features,
 #' \item{excluded_samples}{A vector of the names of samples that were excluded.}
 #'
 #' @export
-exclude_samples <- function(df, df_samples,
-                                         missing_pct_sample = NULL,
-                                         col_missing_sample,
-                                         col_samples) {
-
+exclude_samples <- function(df,
+                            df_samples = NULL,
+                            missing_pct_sample = NULL) {
   # Initialize the excluded samples vector
   excluded_samples <- character(0)
 
@@ -523,23 +509,26 @@ exclude_samples <- function(df, df_samples,
   VAR_missing_pct <- missing_pct_sample
   cat(paste0("# Exclusion samples: excluding samples with more than ", VAR_missing_pct * 100, "% missingness \n"))
 
+  # Calculate missingness for each row (sample)
+  missing_percentages <- rowMeans(is.na(df))
+
   # Identify samples to exclude based on missing data threshold
-  excluded_samples <- df_samples %>%
-    dplyr::filter(.data[[col_missing_sample]] > VAR_missing_pct) %>%
-    dplyr::pull(col_samples)
+  excluded_samples <- names(missing_percentages[missing_percentages > VAR_missing_pct])
 
   # Remove identified samples from main data
   df <- df[!rownames(df) %in% excluded_samples, ]
 
-  # Filter sample metadata to match remaining samples in df
-  df_samples <- df_samples %>%
-    dplyr::filter(!(!!rlang::sym(col_samples) %in% excluded_samples))
-
   # Report excluded samples
   cat(paste0("## Exclusion samples: excluded ", length(excluded_samples), " sample(s) \n"))
 
-  # Return the filtered data, sample metadata, and excluded samples
-  return(list(df = df, df_samples = df_samples, id_samples_exclude = excluded_samples))
+  # Filter df_samples if provided
+  if (!is.null(df_samples)) {
+    df_samples <- df_samples %>%
+      dplyr::filter(!(rownames(.) %in% excluded_samples))
+    return(list(df = df, df_samples = df_samples, id_samples_exclude = excluded_samples))
+  } else {
+    return(list(df = df, id_samples_exclude = excluded_samples))
+  }
 }
 
 #' Impute missing data in a data frame

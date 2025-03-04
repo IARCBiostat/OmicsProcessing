@@ -4,24 +4,14 @@
 \alias{exclude_samples}
 \title{Exclude samples with X missingness}
 \usage{
-exclude_samples(
-  df,
-  df_samples,
-  missing_pct_sample = NULL,
-  col_missing_sample,
-  col_samples
-)
+exclude_samples(df, df_samples = NULL, missing_pct_sample = NULL)
 }
 \arguments{
-\item{df}{A data frame containing the main data with samples to be filtered.}
+\item{df}{A data frame of feature data only}
 
-\item{df_samples}{A data frame containing metadata for samples, including missingness percentages.}
+\item{df_samples}{A data frame containing metadata for samples}
 
 \item{missing_pct_sample}{Numeric, the threshold (between 0 and 1) for sample missing data exclusion (e.g., 0.2 for 20\%).}
-
-\item{col_missing_sample}{Character, the column name in \code{df_samples} indicating the percentage of missing data per sample.}
-
-\item{col_samples}{Character, the column name in \code{df_samples} with sample IDs corresponding to row names in \code{df}.}
 }
 \value{
 A list containing:

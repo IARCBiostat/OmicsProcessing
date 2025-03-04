@@ -4,24 +4,14 @@
 \alias{exclude_features}
 \title{Exclude features with X misingness}
 \usage{
-exclude_features(
-  df,
-  df_features,
-  missing_pct_feature = NULL,
-  col_missing_feature,
-  col_features
-)
+exclude_features(df, df_features = NULL, missing_pct_feature = NULL)
 }
 \arguments{
-\item{df}{A data frame containing the main data with features to be filtered.}
+\item{df}{A data frame of feature data only}
 
-\item{df_features}{A data frame containing metadata for features, including missingness percentages.}
+\item{df_features}{A data frame containing metadata for features}
 
 \item{missing_pct_feature}{Numeric, the threshold (between 0 and 1) for feature missing data exclusion (e.g., 0.2 for 20\%).}
-
-\item{col_missing_feature}{Character, the column name in \code{df_features} indicating the percentage of missing data per feature.}
-
-\item{col_features}{Character, the column name in \code{df_features} with feature IDs corresponding to columns in \code{df}.}
 }
 \value{
 A list containing:

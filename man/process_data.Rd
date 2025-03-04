@@ -6,18 +6,16 @@
 \usage{
 process_data(
   data,
-  data_meta_features,
-  data_meta_samples,
+  data_meta_features = NULL,
+  data_meta_samples = NULL,
   col_samples,
-  col_features,
+  col_features = NULL,
   save = FALSE,
-  path_out,
-  path_outliers,
+  path_out = NULL,
+  path_outliers = NULL,
   exclusion_extreme_feature = FALSE,
-  col_missing_feature = NULL,
   missing_pct_feature = NULL,
   exclusion_extreme_sample = FALSE,
-  col_missing_sample = NULL,
   missing_pct_sample = NULL,
   imputation = FALSE,
   imputation_method = NULL,
@@ -44,7 +42,7 @@ process_data(
 
 \item{col_samples}{A string specifying the column name in \code{data} that contains sample IDs (e.g., \code{"Idepic_Bio"}).}
 
-\item{col_features}{A string specifying the column name in \code{data} that contains feature IDs, which should match the column names of \code{data} (e.g., \code{"UNIPROT"}).}
+\item{col_features}{A string specifying the column name in \code{data_meta_features} that contains feature IDs, which should match the column names of \code{data} (e.g., \code{"UNIPROT"}).}
 
 \item{save}{A logical for whether you want to save the feature data, plots, and exclusion info. Default is \code{FALSE}/.}
 
@@ -54,13 +52,9 @@ process_data(
 
 \item{exclusion_extreme_feature}{A logical flag indicating whether to exclude features with extreme missingness. Default is \code{FALSE}.}
 
-\item{col_missing_feature}{A string specifying the column name in \code{data_meta_features} that contains the percentage of missing values for each feature (e.g., \code{"missing_pct"}).}
-
 \item{missing_pct_feature}{A numeric value specifying the threshold percentage for missingness above which features will be excluded (e.g., \code{0.9}).}
 
 \item{exclusion_extreme_sample}{A logical flag indicating whether to exclude samples with extreme missingness. Default is \code{FALSE}.}
-
-\item{col_missing_sample}{A string specifying the column name in \code{data_meta_samples} that contains the percentage of missing values for each sample (e.g., \code{"missing_pct_samples"}).}
 
 \item{missing_pct_sample}{A numeric value specifying the threshold percentage for missingness above which samples will be excluded (e.g., \code{0.9}).}
 
