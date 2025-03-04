@@ -41,7 +41,7 @@ All arguments are independent and examples are given below. Each function (e.g.,
 
 ### Sample and feature exclusions for >10% missingness
 
-```
+```r
 data_processed <- process_data(
   data = data_features, 
   col_samples = "ID_sample", 
@@ -59,11 +59,12 @@ data_processed <- process_data(
 
 ### Imputation of missing feature data
 
-```
+```r
 > data_processed <- process_data(
 +   data = data_features, 
 +   col_samples = "ID_sample", 
 +   imputation = TRUE, imputation_method = "mean")
+
 ## Imputation using mean 
 ### total feature(s) excluded = 0 
 ### total sample(s) excluded = 0 
@@ -72,7 +73,7 @@ data_processed <- process_data(
 
 If imputing using limit of detection (LOD) or equivalent, you must provide a feature meta-data file which contains a column with feature names and a column of LOD or equivalent:
 
-```
+```r
 data_processed <- process_data(
   data = data_features, 
   data_meta_features = data_meta_features, col_features = "ID_feature", col_LOD = "LOD",
@@ -83,11 +84,12 @@ data_processed <- process_data(
 ### Transformation of feature data
 Ttransformation by all `log10` methods will also perform centering and scaling to a mean of 0
 
-```
+```r
 > data_processed <- process_data(
 +   data = data_features, 
 +   col_samples = "ID_sample", 
 +   transformation = TRUE, transformation_method = "InvRank")
+
 ## Transformation using InvRank 
 ### total feature(s) excluded = 0 
 ### total sample(s) excluded = 0 
@@ -96,7 +98,7 @@ Ttransformation by all `log10` methods will also perform centering and scaling t
 
 ### Sample outlier exclusions based on PCA and LOF
 
-```
+```r
 > data_processed <- process_data(
 +   data = data_features, 
 +   col_samples = "ID_sample", 
@@ -104,6 +106,7 @@ Ttransformation by all `log10` methods will also perform centering and scaling t
 +   exclusion_extreme_sample = TRUE, missing_pct_sample = 0.1,
 +   imputation = TRUE, imputation_method = "mean",
 +   outlier = TRUE)
+
 # Exclusion features: excluding features with more than 10% missingness 
 ## Exclusion features: excluded 44 feature(s) 
 # Exclusion samples: excluding samples with more than 10% missingness 
@@ -119,7 +122,7 @@ Ttransformation by all `log10` methods will also perform centering and scaling t
 
 The outlier function creates a PCA plot where samples are coloured by their LOF. As an example, we can introduce an outlier sample by multiplying all feature values for ID_10 by 1.5:
 
-```
+```r
 > data_features_outlier <- data_features %>%
 +   dplyr::mutate(dplyr::across(2:101, ~ ifelse(dplyr::row_number() == 10, . * 1.5, .)))
 > data_processed <- process_data(
@@ -129,6 +132,7 @@ The outlier function creates a PCA plot where samples are coloured by their LOF.
 +   exclusion_extreme_sample = TRUE, missing_pct_sample = 0.1,
 +   imputation = TRUE, imputation_method = "mean",
 +   outlier = TRUE)
+
 # Exclusion features: excluding features with more than 10% missingness 
 ## Exclusion features: excluded 44 feature(s) 
 # Exclusion samples: excluding samples with more than 10% missingness 
@@ -146,7 +150,7 @@ The outlier function creates a PCA plot where samples are coloured by their LOF.
 ### Plate correction
 You can perform plate correction by providing sample and feature meta-data files.
 
-```
+```r
 data_processed <- process_data(
   data = data_features, 
   data_meta_samples = data_meta_samples,
@@ -159,8 +163,6 @@ data_processed <- process_data(
   cols_listFixedToRemove = c("sex"), 
   col_HeteroSked = NULL)
 ```
-
-
 
 ### Other
 Centering and scaling can be performed using `centre_scale = TRUE`. Centering and scaling is performed for log based transformations at the point of the transformation, regardless of if `centre_scale = TRUE`. 
