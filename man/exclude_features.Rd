@@ -4,19 +4,17 @@
 \alias{exclude_features}
 \title{Exclude features with X misingness}
 \usage{
-exclude_features(df, df_meta_features = NULL, missing_pct_feature = NULL)
+exclude_features(df, missing_pct_feature = NULL)
 }
 \arguments{
 \item{df}{A data frame of feature data only}
-
-\item{df_meta_features}{A data frame containing metadata for features}
 
 \item{missing_pct_feature}{Numeric, the threshold (between 0 and 1) for feature missing data exclusion (e.g., 0.2 for 20\%).}
 }
 \value{
 A list containing:
 \item{df}{The filtered data frame with excluded features removed.}
-\item{df_meta_features}{The filtered feature metadata with excluded features removed.}
+\item{excluded_features}{A vector of the names of features that were excluded.}
 }
 \description{
 This function excludes features from a dataset (\code{df}) based on a specified

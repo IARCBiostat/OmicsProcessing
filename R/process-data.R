@@ -111,11 +111,9 @@ process_data <- function(
   if (exclusion_extreme_feature) {
     list_exclude_features <- exclude_features(
       df = df,
-      df_meta_features = df_meta_features,
       missing_pct_feature = missing_pct_feature)
 
     df <- list_exclude_features$df
-    df_meta_features <- list_exclude_features$df_meta_features
     id_features_exclude <- list_exclude_features$id_features_exclude
   }else{
     id_features_exclude <- NULL
@@ -125,11 +123,9 @@ process_data <- function(
   if (exclusion_extreme_sample) {
     list_exclude_samples <- exclude_samples(
       df = df,
-      df_meta_samples = df_meta_samples,
       missing_pct_sample = missing_pct_sample)
 
     df <- list_exclude_samples$df
-    df_meta_samples <- list_exclude_samples$df_meta_samples
     id_samples_exclude <- list_exclude_samples$id_samples_exclude
   }else{
     id_samples_exclude <- NULL
@@ -137,17 +133,20 @@ process_data <- function(
 
   # imputation ====
   if (imputation) {
-    df <- impute_data(df = df,
-                      df_meta_features = df_meta_features,
-                      imputation_method = imputation_method,
-                      col_LOD = col_LOD,
-                      col_features = col_features)
+    df <- impute_data(
+      df = df,
+      df_meta_features = df_meta_features,
+      imputation_method = imputation_method,
+      col_LOD = col_LOD,
+      col_features = col_features)
   }
 
   # transformation ====
   if (transformation) {
-    list_transformation <- transform_data(df = df,
-                                          transformation_method = transformation_method)
+    list_transformation <- transform_data(
+      df = df,
+      transformation_method = transformation_method)
+
     df <- list_transformation$df
     LABEL_transformation <- list_transformation$transformation_method
     LABEL_centre_scale <- list_transformation$centre_scale
@@ -155,11 +154,9 @@ process_data <- function(
 
   # sample outlier exclusion ====
   if(outlier){
-    list_outliers <- outlier_pca_lof(df = df,
-                                     col_samples= col_samples,
-                                     df_meta_samples = df_meta_samples)
+    list_outliers <- outlier_pca_lof(df = df)
+
     df <- list_outliers$df
-    df_meta_samples <- list_outliers$df_meta_samples
     plot_samples_outlier <- list_outliers$plot_samples_outlier
     id_samples_outlier <- list_outliers$id_samples_outlier
   }else{
@@ -169,12 +166,13 @@ process_data <- function(
 
   # case-control data ====
   if (case_control) {
-    list_casecontrol <- filter_case_control(df = df,
-                                            df_meta_samples = df_meta_samples,
-                                            col_case_control = col_case_control,
-                                            col_samples = col_samples)
+    list_casecontrol <- filter_case_control(
+      df = df,
+      df_meta_samples = df_meta_samples,
+      col_case_control = col_case_control,
+      col_samples = col_samples)
+
     df <- list_casecontrol$df
-    df_meta_samples <- list_casecontrol$df_meta_samples
     id_samples_casecontrol <- list_casecontrol$id_samples_casecontrol
   }else{
     id_samples_casecontrol <- NULL
@@ -199,13 +197,14 @@ process_data <- function(
       }
 
     ## transformation
-    list <- normalization_residualMixedModels(list = list,
-                                                         forIdentifier = col_samples, # sample ID
-                                                         listRandom = cols_listRandom, # variables to model as random effects; effects will be removed
-                                                         listFixedToKeep = cols_listFixedToKeep, # variables to model as fixed effects; effects will be kept
-                                                         listFixedToRemove = cols_listFixedToRemove, # variables to model as fixed effects; effects will be removed
-                                                         HeteroSked = col_HeteroSked # variable for which heteroscedasticity will be accounted for
-    )
+    list <- normalization_residualMixedModels(
+      list = list,
+      forIdentifier = col_samples, # sample ID
+      listRandom = cols_listRandom, # variables to model as random effects; effects will be removed
+      listFixedToKeep = cols_listFixedToKeep, # variables to model as fixed effects; effects will be kept
+      listFixedToRemove = cols_listFixedToRemove, # variables to model as fixed effects; effects will be removed
+      HeteroSked = col_HeteroSked) # variable for which heteroscedasticity will be accounted for
+
     df <- list$data %>%
       dplyr::select(-tidyselect::all_of(c(cols_listRandom, cols_listFixedToKeep))) %>%
       tibble::column_to_rownames(col_samples)
@@ -251,6 +250,19 @@ process_data <- function(
     total_excluded_samples <- total_excluded_samples + length(id_samples_casecontrol)
   }
   cat("### total sample(s) excluded =", total_excluded_samples, "\n")
+
+  # filter df_meta_samples/features if provided ====
+  if (!is.null(df_meta_samples)) {
+    id <- rownames(df)
+    df_meta_samples <- df_meta_samples %>%
+      dplyr::filter(col_samples %in% id)
+  }
+
+  if (!is.null(df_meta_features)) {
+    id <- names(df)
+    df_meta_features <- df_meta_features %>%
+      dplyr::filter(col_features %in% id)
+  }
 
   # save ====
   if(save){
@@ -444,15 +456,13 @@ generate_labels <- function(exclusion_extreme_feature,
 #' threshold of missing data percentage in a meta data file.
 #'
 #' @param df A data frame of feature data only
-#' @param df_meta_features A data frame containing metadata for features
 #' @param missing_pct_feature Numeric, the threshold (between 0 and 1) for feature missing data exclusion (e.g., 0.2 for 20%).
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded features removed.}
-#' \item{df_meta_features}{The filtered feature metadata with excluded features removed.}
+#' \item{excluded_features}{A vector of the names of features that were excluded.}
 #'
 #' @export
 exclude_features <- function(df,
-                             df_meta_features = NULL,
                              missing_pct_feature = NULL) {
   # Initialize the excluded features vector
   excluded_features <- character(0)
@@ -476,13 +486,7 @@ exclude_features <- function(df,
   cat(paste0("## Exclusion features: excluded ", length(excluded_features), " feature(s) \n"))
 
   # Filter df_meta_features if provided
-  if (!is.null(df_meta_features)) {
-    df_meta_features <- df_meta_features %>%
-      dplyr::filter(!(rownames(.) %in% excluded_features))
-    return(list(df = df, df_meta_features = df_meta_features, id_features_exclude = excluded_features))
-  } else {
-    return(list(df = df, id_features_exclude = excluded_features))
-  }
+  return(list(df = df, id_features_exclude = excluded_features))
 }
 
 #' Exclude samples with X missingness
@@ -491,17 +495,14 @@ exclude_features <- function(df,
 #' threshold of missing data percentage in a meta data file.
 #'
 #' @param df A data frame of feature data only
-#' @param df_meta_samples A data frame containing metadata for samples
 #' @param missing_pct_sample Numeric, the threshold (between 0 and 1) for sample missing data exclusion (e.g., 0.2 for 20%).
 #'
 #' @return A list containing:
 #' \item{df}{The filtered data frame with excluded samples removed.}
-#' \item{df_meta_samples}{The filtered sample metadata with excluded samples removed.}
 #' \item{excluded_samples}{A vector of the names of samples that were excluded.}
 #'
 #' @export
 exclude_samples <- function(df,
-                            df_meta_samples = NULL,
                             missing_pct_sample = NULL) {
   # Initialize the excluded samples vector
   excluded_samples <- character(0)
@@ -533,13 +534,7 @@ exclude_samples <- function(df,
   cat(paste0("## Exclusion samples: excluded ", length(excluded_samples), " sample(s) \n"))
 
   # Filter df_meta_samples if provided
-  if (!is.null(df_meta_samples)) {
-    df_meta_samples <- df_meta_samples %>%
-      dplyr::filter(!(rownames(.) %in% excluded_samples))
-    return(list(df = df, df_meta_samples = df_meta_samples, id_samples_exclude = excluded_samples))
-  } else {
-    return(list(df = df, id_samples_exclude = excluded_samples))
-  }
+  return(list(df = df, id_samples_exclude = excluded_samples))
 }
 
 #' Impute missing data in a data frame
@@ -763,10 +758,6 @@ transform_data <- function(df,
 #'
 #' @param df A data frame containing the features to analyze. Rows represent samples
 #'           and columns represent features.
-#' @param col_samples A string specifying the column name in `df_meta_samples` to use for sample filtering.
-#' @param col_features A string specifying the column name in `df_meta_features` to use for feature filtering.
-#' @param df_meta_samples A data frame containing sample data for filtering.
-#' @param df_meta_features A data frame containing feature data for filtering.
 #'
 #' @return A list containing the filtered data frame, the sample outlier plot,
 #'         and a vector of IDs of excluded samples.
@@ -774,25 +765,19 @@ transform_data <- function(df,
 #'
 #' @examples
 #' \dontrun{
-#'   result <- outlier_pca_lof(df, col_samples = "sample_col",
-#'                               col_features = "feature_col",
-#'                               df_meta_samples = df_meta_samples,
-#'                               df_meta_features = df_meta_features)
+#'   result <- outlier_pca_lof(df)
 #'   print(result$filtered_df)
 #'   print(result$plot_samples)
 #'   print(result$excluded_samples)
 #' }
-outlier_pca_lof <- function(df,
-                            col_samples,
-                            col_features,
-                            df_meta_samples,
-                            df_meta_features) {
+outlier_pca_lof <- function(df) {
   cat("# Outlier exclusion using PCA and LOF \n")
 
   # Check for missing values in the dataframe
   if (any(is.na(df))) {
     cat("* There are missing values in the data; PCA is not possible with missing data\n")
     cat("* Outlier exclusions will be skipped and the label will be changed to reflect this\n")
+    # Return without outlier information if there are missing values
     return(list(df = df, plot_samples_outlier = NULL, id_samples_outlier = NULL))
   } else {
     # Step 1: PCA sample-wise
@@ -828,11 +813,10 @@ outlier_pca_lof <- function(df,
     # Step 4: Exclude Outliers
     if (length(outliers_samples) > 0) {
       df <- df[!rownames(df) %in% id_samples_outlier, ] # Filter data
-      df_meta_samples <- df_meta_samples %>%
-        dplyr::filter(!(!!rlang::sym(col_samples) %in% id_samples_outlier)) # Filter sample data
     }
 
-    return(list(df = df, df_meta_samples = df_meta_samples, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
+    # Conditionally return df_meta_samples only if it's not NULL
+      return(list(df = df, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
   }
 }
 

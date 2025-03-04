@@ -4,25 +4,11 @@
 \alias{outlier_pca_lof}
 \title{Perform PCA and Identify Outliers}
 \usage{
-outlier_pca_lof(
-  df,
-  col_samples,
-  col_features,
-  df_meta_samples,
-  df_meta_features
-)
+outlier_pca_lof(df)
 }
 \arguments{
 \item{df}{A data frame containing the features to analyze. Rows represent samples
 and columns represent features.}
-
-\item{col_samples}{A string specifying the column name in \code{df_meta_samples} to use for sample filtering.}
-
-\item{col_features}{A string specifying the column name in \code{df_meta_features} to use for feature filtering.}
-
-\item{df_meta_samples}{A data frame containing sample data for filtering.}
-
-\item{df_meta_features}{A data frame containing feature data for filtering.}
 }
 \value{
 A list containing the filtered data frame, the sample outlier plot,
@@ -36,10 +22,7 @@ the original data frame.
 }
 \examples{
 \dontrun{
-  result <- outlier_pca_lof(df, col_samples = "sample_col",
-                              col_features = "feature_col",
-                              df_meta_samples = df_meta_samples,
-                              df_meta_features = df_meta_features)
+  result <- outlier_pca_lof(df)
   print(result$filtered_df)
   print(result$plot_samples)
   print(result$excluded_samples)
