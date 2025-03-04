@@ -49,6 +49,34 @@ data_meta_samples <- data.frame(
   age = age
 )
 
+# sample missingness ====
+target_rows <- 91:100
+missing_percentages_rows <- seq(0.1, 1, by = 0.1)
+
+for (i in 1:length(target_rows)) {
+  row_index <- target_rows[i]
+  missing_pct <- missing_percentages_rows[i]
+
+  # Calculate number of missing values for this row
+  num_missing <- floor((n_cols - 1) * missing_pct)  # Exclude the ID_sample column
+
+  # Randomly select columns to set to NA (excluding the first column)
+  missing_indices <- sample(2:n_cols, num_missing)
+  data_features[row_index, missing_indices] <- NA
+}
+
+# make row 1 have 100% data using mean of column
+for (j in 2:n_cols) { # Iterate over columns, starting from the second column
+  if (is.na(data_features[1, j])) {
+    column_mean <- mean(data_features[, j], na.rm = TRUE)  # Calculate column mean, excluding NAs
+    data_features[1, j] <- column_mean  # Replace NA with column mean
+  }
+}
+
+# check ====
+missing_pct_row <- rowMeans(is.na(data_features[, 2:n_cols]))
+missing_pct_col <- colMeans(is.na(data_features[, 2:n_cols]))
+
 # write ====
 save(data_features, file = "data/data_features.rda")
 save(data_meta_features, file = "data/data_meta_features.rda")
