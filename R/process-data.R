@@ -685,7 +685,6 @@ impute_data <- function(df,
 #' @export
 transform_data <- function(df,
                            transformation_method) {
-  cat("# Transformation \n")
   valid_transformation_methods <- c("InvRank", "Log10", "Log10Capped", "Log10ExclExtremes")
 
   # Validate transformation method
@@ -696,7 +695,7 @@ transform_data <- function(df,
   # Define transformation functions based on method
   ## InvRank
   if (transformation_method == "InvRank") {
-    cat("## transformation using InvRank \n")
+    cat("## Transformation using InvRank \n")
     fun_scale <- function(.x) {
       stats::qnorm((rank(.x, na.last = "keep") - 0.5) / sum(!is.na(.x))) # rank-inverse normalization
     }
@@ -709,7 +708,7 @@ transform_data <- function(df,
       cat("* log10 not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
     } else {
-      cat("## transformation using Log10 \n")
+      cat("## Transformation using Log10 \n")
       fun_scale <- function(.x) scale(log10(.x)) # log-transform and scale
       LABEL_transformation <- "Log10"
       LABEL_centre_scale <- "TRUE"
@@ -721,7 +720,7 @@ transform_data <- function(df,
       cat("* Log10Capped not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
     } else {
-      cat("## transformation using Log10Capped \n")
+      cat("## Transformation using Log10Capped \n")
       fun_scale <- function(.x) {
         out <- scale(log10(.x))
         pmin(pmax(out, -5), 5) # cap values to [-5, 5]
@@ -736,7 +735,7 @@ transform_data <- function(df,
       cat("* Log10ExclExtremes not possible as negative values present. Transformation will be skipped.\n")
       return(list(df = df, transformation_method = FALSE, centre_scale = FALSE))
     } else {
-      cat("## transformation using Log10ExclExtremes \n")
+      cat("## Transformation using Log10ExclExtremes \n")
       fun_scale <- function(.x) {
         out <- scale(log10(.x))
         ifelse(abs(out) <= 5, out, NA) # exclude extremes outside [-5, 5]
