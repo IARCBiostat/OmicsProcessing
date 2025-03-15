@@ -166,6 +166,11 @@ process_data <- function(
 
   # case-control data ====
   if (case_control) {
+    
+    id <- c(id_samples_exclude, id_samples_outlier)
+    df_meta_samples <- df_meta_samples %>%
+      filter(!.data[[col_samples]] == id)
+    
     list_casecontrol <- filter_case_control(
       df = df,
       df_meta_samples = df_meta_samples,
