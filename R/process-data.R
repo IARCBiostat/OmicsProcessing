@@ -169,7 +169,7 @@ process_data <- function(
     
     id <- c(id_samples_exclude, id_samples_outlier)
     df_meta_samples <- df_meta_samples %>%
-      filter(!.data[[col_samples]] == id)
+    dplyr::filter(!.data[[col_samples]] %in% id)
     
     list_casecontrol <- OmicsProcessing::filter_case_control(
       df = df,
