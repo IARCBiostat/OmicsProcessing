@@ -86,7 +86,7 @@ process_data <- function(
   df_meta_features <- tibble::as_tibble(data_meta_features)
 
   # make labels ====
-  labels <- generate_labels(
+  labels <- OmicsProcessing::generate_labels(
     exclusion_extreme_feature = exclusion_extreme_feature,
     missing_pct_feature = missing_pct_feature,
     exclusion_extreme_sample = exclusion_extreme_sample,
@@ -109,7 +109,7 @@ process_data <- function(
 
   # Extreme exclusion features ====
   if (exclusion_extreme_feature) {
-    list_exclude_features <- exclude_features(
+    list_exclude_features <- OmicsProcessing::exclude_features(
       df = df,
       missing_pct_feature = missing_pct_feature)
 
@@ -121,7 +121,7 @@ process_data <- function(
 
   # Extreme exclusion samples ====
   if (exclusion_extreme_sample) {
-    list_exclude_samples <- exclude_samples(
+    list_exclude_samples <- OmicsProcessing::exclude_samples(
       df = df,
       missing_pct_sample = missing_pct_sample)
 
@@ -133,7 +133,7 @@ process_data <- function(
 
   # imputation ====
   if (imputation) {
-    df <- impute_data(
+    df <- OmicsProcessing::impute_data(
       df = df,
       df_meta_features = df_meta_features,
       imputation_method = imputation_method,
@@ -143,7 +143,7 @@ process_data <- function(
 
   # transformation ====
   if (transformation) {
-    list_transformation <- transform_data(
+    list_transformation <- OmicsProcessing::transform_data(
       df = df,
       transformation_method = transformation_method)
 
@@ -154,7 +154,7 @@ process_data <- function(
 
   # sample outlier exclusion ====
   if(outlier){
-    list_outliers <- outlier_pca_lof(df = df)
+    list_outliers <- OmicsProcessing::outlier_pca_lof(df = df)
 
     df <- list_outliers$df
     plot_samples_outlier <- list_outliers$plot_samples_outlier
@@ -171,7 +171,7 @@ process_data <- function(
     df_meta_samples <- df_meta_samples %>%
       filter(!.data[[col_samples]] == id)
     
-    list_casecontrol <- filter_case_control(
+    list_casecontrol <- OmicsProcessing::filter_case_control(
       df = df,
       df_meta_samples = df_meta_samples,
       col_case_control = col_case_control,
@@ -215,7 +215,7 @@ process_data <- function(
       }
 
     ## transformation
-    df_normalised <- normalization_residualMixedModels(
+    df_normalised <- OmicsProcessing::normalization_residualMixedModels(
       list = list,
       identifier = col_samples, # sample ID
       listRandom = cols_listRandom, # variables to model as random effects; effects will be removed
