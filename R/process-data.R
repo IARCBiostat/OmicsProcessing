@@ -169,7 +169,7 @@ process_data <- function(
     
     id <- c(id_samples_exclude, id_samples_outlier)
     df_meta_samples <- df_meta_samples %>%
-    dplyr::filter(!.data[[col_samples]] %in% id)
+      dplyr::filter(!!rlang::sym(col_samples) %in% id)
     
     list_casecontrol <- OmicsProcessing::filter_case_control(
       df = df,
@@ -184,18 +184,18 @@ process_data <- function(
   }
 
   # filter df_meta_samples/features if provided ====
-  if (!is.null(df_meta_samples)) {
+  if (!is.null(df_meta_samples) && nrow(df_meta_samples) > 0) {
     id <- rownames(df)
     df_meta_samples <- df_meta_samples %>%
       dplyr::filter(!!rlang::sym(col_samples) %in% id)
-    }
-
-  if (!is.null(df_meta_features)) {
+  }
+  
+  if (!is.null(df_meta_features) && nrow(df_meta_features) > 0) {
     id <- names(df)
     df_meta_features <- df_meta_features %>%
       dplyr::filter(!!rlang::sym(col_features) %in% id)
   }
-
+  
   # plate correction ====
   if (plate_correction) {
     cat("# Plate correction \n")
