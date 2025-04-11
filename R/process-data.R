@@ -184,13 +184,13 @@ process_data <- function(
   }
 
   # filter df_meta_samples/features if provided ====
-  if (!is.null(df_meta_samples) && nrow(df_meta_samples) > 0) {
+  if (!is.null(df_meta_samples) && nrow(df_meta_samples) > 0 && !is.null(col_samples)) {
     id <- rownames(df)
     df_meta_samples <- df_meta_samples %>%
       dplyr::filter(!!rlang::sym(col_samples) %in% id)
   }
   
-  if (!is.null(df_meta_features) && nrow(df_meta_features) > 0) {
+  if (!is.null(df_meta_features) && nrow(df_meta_features) > 0 && !is.null(col_features)) {
     id <- names(df)
     df_meta_features <- df_meta_features %>%
       dplyr::filter(!!rlang::sym(col_features) %in% id)
