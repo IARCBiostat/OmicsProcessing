@@ -658,10 +658,17 @@ impute_data <- function(
            parallel::stopCluster(cl)
          },
          "left-censored" = {
-           cat("## Imputation using left-censored \n")
-           df <- df %>%
-             as.matrix() %>%
-             imputeLCMD::impute.MAR.MNAR(model.selector = imputeLCMD::model.Selector(.), method.MNAR = 'QRILC') %>%
+           cat("## Imputation using left-censored method (QRILC with fallback to MinProb) \n")
+           df <- tryCatch({
+             imputeLCMD::impute.MAR.MNAR(as.matrix(df),
+                                         model.selector = imputeLCMD::model.Selector(df),
+                                         method.MNAR = 'QRILC')
+           }, error = function(e) {
+             cat("QRILC failed. Retrying with MinProb. Error: ", e$message, "\n")
+             imputeLCMD::impute.MAR.MNAR(as.matrix(df),
+                                         model.selector = imputeLCMD::model.Selector(df),
+                                         method.MNAR = 'MinProb')
+           }) %>%
              tibble::as_tibble() %>%
              tibble::add_column(id = rownames(df), .before = 1) %>%
              tibble::column_to_rownames(var = "id")
