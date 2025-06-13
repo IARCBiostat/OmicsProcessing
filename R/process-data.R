@@ -18,7 +18,7 @@
 #' @param exclusion_extreme_sample A logical flag indicating whether to exclude samples with extreme missingness. Default is \code{FALSE}.
 #' @param missing_pct_sample A numeric value specifying the threshold percentage for missingness above which samples will be excluded (e.g., \code{0.9}).
 #' @param imputation A logical flag indicating whether imputation should be performed. Default is \code{FALSE}.
-#' @param imputation_method A string specifying the method to use for imputation. Options include \code{"LOD"}, \code{"1/5th"}, \code{"KNN"}, \code{"ppca"}, \code{"median"}, \code{"mean"}, \code{"rf"}, and \code{"left-censored"}.
+#' @param imputation_method A string specifying the method to use for imputation. Options include \code{"LOD"}, \code{"1/5th"}, \code{"KNN"}, \code{"PPCA"}, \code{"median"}, \code{"mean"}, \code{"RF"}, and \code{"LCMD"}.
 #' @param col_LOD A string specifying the column name in \code{data_meta_features} that contains the limit of detection (LOD) values, required if \code{imputation_method} is \code{"LOD"}.
 #' @param transformation A logical flag indicating whether transformation should be performed. Default is \code{FALSE}.
 #' @param transformation_method A string specifying the method to use for transformation. Options include \code{"InvRank"}, \code{"Log10"}, \code{"Log10Capped"}, and \code{"Log10ExclExtremes"}.
@@ -547,12 +547,12 @@ exclude_samples <- function(
 #' Impute missing data in a data frame
 #'
 #' This function imputes missing data in a data frame (`df`) using the specified
-#' `imputation_method`. Supported methods include "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", and "left-censored".
+#' `imputation_method`. Supported methods include "LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", and "LCMD".
 #'
 #' @param df A data frame with missing values to be imputed.
 #' @param df_meta_features A data frame containing feature metadata, required for "LOD" imputation.
 #' @param imputation_method A character string specifying the imputation method. Valid options are:
-#'   "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored".
+#'   "LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", "LCMD".
 #' @param col_LOD (Optional) Character name of the column in `df_meta_features` containing the limit of detection (LOD) values, required for "LOD" imputation.
 #' @param col_features (Optional) Character name of the column in `df_meta_features` containing feature names, required for "LOD" imputation.
 #'
@@ -567,7 +567,7 @@ impute_data <- function(
     col_LOD = NULL) {
 
   # Define valid imputation methods
-  valid_imputation_methods <- c("LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored")
+  valid_imputation_methods <- c("LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", "LCMD")
 
   # Validate imputation method
   if (is.null(imputation_method) || !(imputation_method %in% valid_imputation_methods)) {
@@ -616,11 +616,11 @@ impute_data <- function(
              tibble::add_column(id = rownames(df), .before = 1) %>%
              tibble::column_to_rownames(var = "id")
          },
-         "ppca" = {
+         "PPCA" = {
            cat("## Imputation using probabilistic PCA \n")
            df <- df %>%
              as.matrix() %>%
-             pcaMethods::pca(nPcs = 3, method = "ppca") %>%
+             pcaMethods::pca(nPcs = 3, method = "PPCA") %>%
              pcaMethods::completeObs() %>%
              tibble::as_tibble() %>%
              tibble::add_column(id = rownames(df), .before = 1) %>%
@@ -644,7 +644,7 @@ impute_data <- function(
              tibble::add_column(id = rownames(df), .before = 1) %>%
              tibble::column_to_rownames(var = "id")
          },
-         "rf" = {
+         "RF" = {
            cat("## Imputation using random forest \n")
            cl <- parallel::makeCluster(7)
            doParallel::registerDoParallel(cl)
@@ -657,8 +657,8 @@ impute_data <- function(
              tibble::column_to_rownames(var = "id")
            parallel::stopCluster(cl)
          },
-         "left-censored" = {
-           cat("## Imputation using left-censored method (QRILC with fallback to MinProb) \n")
+         "LCMD" = {
+           cat("## Imputation using LCMD method (QRILC with fallback to MinProb) \n")
            df <- tryCatch({
              imputeLCMD::impute.MAR.MNAR(as.matrix(df),
                                          model.selector = imputeLCMD::model.Selector(df),
