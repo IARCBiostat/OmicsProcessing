@@ -18,7 +18,7 @@ impute_data(
 \item{df_meta_features}{A data frame containing feature metadata, required for "LOD" imputation.}
 
 \item{imputation_method}{A character string specifying the imputation method. Valid options are:
-"LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", "left-censored".}
+"LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", "LCMD".}
 
 \item{col_features}{(Optional) Character name of the column in \code{df_meta_features} containing feature names, required for "LOD" imputation.}
 
@@ -29,5 +29,5 @@ A data frame (\code{df}) with imputed values.
 }
 \description{
 This function imputes missing data in a data frame (\code{df}) using the specified
-\code{imputation_method}. Supported methods include "LOD", "1/5th", "KNN", "ppca", "median", "mean", "rf", and "left-censored".
+\code{imputation_method}. Supported methods include "LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", and "LCMD".
 }
