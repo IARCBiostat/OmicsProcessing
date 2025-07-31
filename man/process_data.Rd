@@ -60,7 +60,7 @@ process_data(
 
 \item{imputation}{A logical flag indicating whether imputation should be performed. Default is \code{FALSE}.}
 
-\item{imputation_method}{A string specifying the method to use for imputation. Options include \code{"LOD"}, \code{"1/5th"}, \code{"KNN"}, \code{"ppca"}, \code{"median"}, \code{"mean"}, \code{"rf"}, and \code{"left-censored"}.}
+\item{imputation_method}{A string specifying the method to use for imputation. Options include \code{"LOD"}, \code{"1/5th"}, \code{"KNN"}, \code{"PPCA"}, \code{"median"}, \code{"mean"}, \code{"RF"}, and \code{"LCMD"}.}
 
 \item{col_LOD}{A string specifying the column name in \code{data_meta_features} that contains the limit of detection (LOD) values, required if \code{imputation_method} is \code{"LOD"}.}
 

@@ -1,0 +1,58 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data
+.RData
+
+# User-specific files
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# Output files
+*.out
+*.pdf
+*.log
+*.aux
+*.toc
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*~
+
+# Build files
+.DS_Store
+.Rbuildignore
+.Rcheck/
+*.tar.gz
+
+# Coverage and test reports
+coverage/
+tests/testthat.Rout*
+tests/testthat.Rout.save
+.Rtest.Rout
+covr_report/
+
+# Packrat or renv (if used)
+packrat/
+renv/library/
+renv/python/
+renv/staging/
+
+# Cache directories
+.cache/
+.Rcache/
+__pycache__/
+
+# VS Code settings (if used)
+.vscode/
+
+# Mac and Linux system files
+Thumbs.db
+.svn/
+*.swp
