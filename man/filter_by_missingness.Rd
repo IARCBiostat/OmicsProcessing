@@ -9,7 +9,8 @@ filter_by_missingness(
   row_thresh = 0.5,
   col_thresh = 0.5,
   target_cols = NULL,
-  is_qc = NULL
+  is_qc = NULL,
+  filter_order = c("simultaneous", "col_then_row", "row_then_col")
 )
 }
 \arguments{
@@ -27,6 +28,10 @@ missingness filtering. If \code{NULL}, all columns are used.}
 
 \item{is_qc}{Optional logical vector indicating QC rows. If \code{NULL},
 all rows are treated as analytical samples (i.e., no QC rows).}
+
+\item{filter_order}{Character string indicating the filtering mode.
+One of \code{"simultaneous"} (default), \code{"col_then_row"}, or
+\code{"row_then_col"}.}
 }
 \value{
 A filtered data frame with:
@@ -54,9 +59,14 @@ QC samples (identified using the \code{is_qc} logical vector) are excluded
 from all missingness calculations, but retained in the output. This ensures
 that filtering is based solely on analytical samples, while preserving QC
 rows for downstream inspection or diagnostics.
+
+Users can optionally control the order in which row and column filtering is
+applied using the \code{filter_order} argument. The default is
+\code{"simultaneous"}, which performs both row and column filtering at once.
+Sequential filtering modes (\code{"col_then_row"} or \code{"row_then_col"})
+may be useful for fine-tuning missingness cleanup in certain datasets.
 }
 \examples{
-# Sample data frame
 df <- data.frame(
   A = c(1, NA, 3, NA),
   B = c(1, 2, NA, NA),
@@ -73,7 +83,10 @@ filter_by_missingness(df, target_cols = "^A|B$", is_qc = df$qc)
 # 3. Apply to all columns and assume all rows are non-QC
 filter_by_missingness(df)
 
-# 4. No QC, using only columns A and B
-filter_by_missingness(df, target_cols = c("A", "B"))
+# 4. Remove columns first, then rows
+filter_by_missingness(df, filter_order = "col_then_row")
+
+# 5. Remove rows first, then columns
+filter_by_missingness(df, filter_order = "row_then_col")
 
 }
