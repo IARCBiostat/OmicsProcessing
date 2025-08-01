@@ -64,20 +64,20 @@ process_data <- function(
     outlier = FALSE,
     plate_correction = FALSE, cols_listRandom = NULL, cols_listFixedToKeep = NULL, cols_listFixedToRemove = NULL, col_HeteroSked = NULL,
     centre_scale = FALSE,
-    case_control = FALSE, col_case_control = NULL
-) {
-
+    case_control = FALSE, col_case_control = NULL) {
   # df and VAR checks ====
   ## Check if specified columns exist in the data frames
-  OmicsProcessing::data_check(data = data,
-                          data_meta_features = data_meta_features,
-                          data_meta_samples = data_meta_samples,
-                          col_samples = col_samples,
-                          col_features = col_features,
-                          exclusion_extreme_feature = exclusion_extreme_feature,
-                          exclusion_extreme_sample = exclusion_extreme_sample,
-                          missing_pct_feature = missing_pct_feature,
-                          missing_pct_sample = missing_pct_sample)
+  OmicsProcessing::data_check(
+    data = data,
+    data_meta_features = data_meta_features,
+    data_meta_samples = data_meta_samples,
+    col_samples = col_samples,
+    col_features = col_features,
+    exclusion_extreme_feature = exclusion_extreme_feature,
+    exclusion_extreme_sample = exclusion_extreme_sample,
+    missing_pct_feature = missing_pct_feature,
+    missing_pct_sample = missing_pct_sample
+  )
 
   # make df ====
   df <- data %>%
@@ -97,25 +97,27 @@ process_data <- function(
     transformation_method = transformation_method,
     outlier = outlier,
     plate_correction = plate_correction,
-    centre_scale = centre_scale)
+    centre_scale = centre_scale
+  )
 
-  LABEL_exclusion_extreme_feature = labels$LABEL_exclusion_extreme_feature
-  LABEL_exclusion_extreme_sample = labels$LABEL_exclusion_extreme_sample
-  LABEL_imputation = labels$LABEL_imputation
-  LABEL_transformation = labels$LABEL_transformation
-  LABEL_outlier = labels$LABEL_outlier
-  LABEL_plate_correction = labels$LABEL_plate_correction
-  LABEL_centre_scale = labels$LABEL_centre_scale
+  LABEL_exclusion_extreme_feature <- labels$LABEL_exclusion_extreme_feature
+  LABEL_exclusion_extreme_sample <- labels$LABEL_exclusion_extreme_sample
+  LABEL_imputation <- labels$LABEL_imputation
+  LABEL_transformation <- labels$LABEL_transformation
+  LABEL_outlier <- labels$LABEL_outlier
+  LABEL_plate_correction <- labels$LABEL_plate_correction
+  LABEL_centre_scale <- labels$LABEL_centre_scale
 
   # Extreme exclusion features ====
   if (exclusion_extreme_feature) {
     list_exclude_features <- OmicsProcessing::exclude_features(
       df = df,
-      missing_pct_feature = missing_pct_feature)
+      missing_pct_feature = missing_pct_feature
+    )
 
     df <- list_exclude_features$df
     id_features_exclude <- list_exclude_features$id_features_exclude
-  }else{
+  } else {
     id_features_exclude <- NULL
   }
 
@@ -123,11 +125,12 @@ process_data <- function(
   if (exclusion_extreme_sample) {
     list_exclude_samples <- OmicsProcessing::exclude_samples(
       df = df,
-      missing_pct_sample = missing_pct_sample)
+      missing_pct_sample = missing_pct_sample
+    )
 
     df <- list_exclude_samples$df
     id_samples_exclude <- list_exclude_samples$id_samples_exclude
-  }else{
+  } else {
     id_samples_exclude <- NULL
   }
 
@@ -138,14 +141,16 @@ process_data <- function(
       df_meta_features = df_meta_features,
       imputation_method = imputation_method,
       col_LOD = col_LOD,
-      col_features = col_features)
+      col_features = col_features
+    )
   }
 
   # transformation ====
   if (transformation) {
     list_transformation <- OmicsProcessing::transform_data(
       df = df,
-      transformation_method = transformation_method)
+      transformation_method = transformation_method
+    )
 
     df <- list_transformation$df
     LABEL_transformation <- list_transformation$transformation_method
@@ -153,33 +158,33 @@ process_data <- function(
   }
 
   # sample outlier exclusion ====
-  if(outlier){
+  if (outlier) {
     list_outliers <- OmicsProcessing::outlier_pca_lof(df = df)
 
     df <- list_outliers$df
     plot_samples_outlier <- list_outliers$plot_samples_outlier
     id_samples_outlier <- list_outliers$id_samples_outlier
-  }else{
+  } else {
     plot_samples_outlier <- NULL
     id_samples_outlier <- NULL
   }
 
   # case-control data ====
   if (case_control) {
-    
     id <- c(id_samples_exclude, id_samples_outlier)
     df_meta_samples <- df_meta_samples %>%
-      dplyr::filter(! (!!rlang::sym(col_samples) %in% id))
-    
+      dplyr::filter(!(!!rlang::sym(col_samples) %in% id))
+
     list_casecontrol <- OmicsProcessing::filter_case_control(
       df = df,
       df_meta_samples = df_meta_samples,
       col_case_control = col_case_control,
-      col_samples = col_samples)
+      col_samples = col_samples
+    )
 
     df <- list_casecontrol$df
     id_samples_casecontrol <- list_casecontrol$id_samples_casecontrol
-  }else{
+  } else {
     id_samples_casecontrol <- NULL
   }
 
@@ -189,13 +194,13 @@ process_data <- function(
     df_meta_samples <- df_meta_samples %>%
       dplyr::filter(!!rlang::sym(col_samples) %in% id)
   }
-  
+
   if (!is.null(df_meta_features) && nrow(df_meta_features) > 0 && !is.null(col_features)) {
     id <- names(df)
     df_meta_features <- df_meta_features %>%
       dplyr::filter(!!rlang::sym(col_features) %in% id)
   }
-  
+
   # plate correction ====
   if (plate_correction) {
     cat("# Plate correction \n")
@@ -208,10 +213,12 @@ process_data <- function(
     list <- df %>%
       tibble::rownames_to_column(var = col_samples) %>%
       {
-        list(data_features = .,
-             data_samples = df_meta_samples,
-             data_meta_features = df_meta_features %>%
-               dplyr::rename(Name = tidyselect::all_of(col_features)))
+        list(
+          data_features = .,
+          data_samples = df_meta_samples,
+          data_meta_features = df_meta_features %>%
+            dplyr::rename(Name = tidyselect::all_of(col_features))
+        )
       }
 
     ## transformation
@@ -221,7 +228,8 @@ process_data <- function(
       listRandom = cols_listRandom, # variables to model as random effects; effects will be removed
       listFixedToKeep = cols_listFixedToKeep, # variables to model as fixed effects; effects will be kept
       listFixedToRemove = cols_listFixedToRemove, # variables to model as fixed effects; effects will be removed
-      HeteroSked = col_HeteroSked) # variable for which heteroscedasticity will be accounted for
+      HeteroSked = col_HeteroSked
+    ) # variable for which heteroscedasticity will be accounted for
 
     df <- df_normalised %>%
       tibble::column_to_rownames(col_samples)
@@ -238,13 +246,15 @@ process_data <- function(
   }
 
   # LABEL ====
-  LABEL <- paste0("exclusion-feature-", LABEL_exclusion_extreme_feature,
-                  "_exclusion-sample-", LABEL_exclusion_extreme_sample,
-                  "_imputation-", LABEL_imputation,
-                  "_transformation-", LABEL_transformation,
-                  "_outlier-", LABEL_outlier,
-                  "_platecorrection-", LABEL_plate_correction,
-                  "_centre-scale-", LABEL_centre_scale)
+  LABEL <- paste0(
+    "exclusion-feature-", LABEL_exclusion_extreme_feature,
+    "_exclusion-sample-", LABEL_exclusion_extreme_sample,
+    "_imputation-", LABEL_imputation,
+    "_transformation-", LABEL_transformation,
+    "_outlier-", LABEL_outlier,
+    "_platecorrection-", LABEL_plate_correction,
+    "_centre-scale-", LABEL_centre_scale
+  )
 
   # create id exclusions ====
   id_exclusions <- list(
@@ -270,10 +280,10 @@ process_data <- function(
   cat("### total sample(s) excluded =", total_excluded_samples, "\n")
 
   # save ====
-  if(save){
+  if (save) {
     cat("# Saving to: ", path_out, "\n")
     ## save outlier figure ====
-    if(LABEL_outlier){
+    if (LABEL_outlier) {
       cat("## saving outlier plots \n")
       grDevices::tiff(paste0(path_outliers, "plot-outliers_", LABEL, ".tiff"), width = 1200, height = 600, units = "px")
       print(plot_samples_outlier)
@@ -289,9 +299,9 @@ process_data <- function(
     df_processed <- df %>%
       tibble::rownames_to_column(col_samples)
     save(df_processed, file = paste0(path_out, "data-features_", LABEL, ".rda"))
-    }
+  }
   # return ====
-  if(LABEL_outlier) {
+  if (LABEL_outlier) {
     cat("# returning a list of data, outlier plot, and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
@@ -328,7 +338,7 @@ process_data <- function(
 #'
 #' @return Logical; `TRUE` if all required columns are present, otherwise an error is raised.
 #'
-#'@export
+#' @export
 data_check <- function(
     data,
     data_meta_features,
@@ -339,7 +349,6 @@ data_check <- function(
     exclusion_extreme_sample = FALSE,
     missing_pct_feature = NULL,
     missing_pct_sample = NULL) {
-
   # Check if required sample columns exist in data
   required_columns_data <- c(col_samples)
   if (!all(required_columns_data %in% colnames(data))) {
@@ -403,7 +412,6 @@ generate_labels <- function(
     outlier,
     plate_correction,
     centre_scale) {
-
   # Create label for extreme feature exclusion
   LABEL_exclusion_extreme_feature <- if (exclusion_extreme_feature) {
     missing_pct_feature <- as.numeric(missing_pct_feature)
@@ -525,11 +533,11 @@ exclude_samples <- function(
   excluded_samples <- names(missing_percentages[missing_percentages > VAR_missing_pct])
 
   # Remove identified samples from main data
-  if (length(excluded_samples) > 0) {  # Check if excluded_samples is not empty
+  if (length(excluded_samples) > 0) { # Check if excluded_samples is not empty
     df <- df %>%
-      tibble::rownames_to_column("rowname") %>%  # Convert rownames to column
-      dplyr::filter(!rowname %in% excluded_samples) %>%  # Filter using dplyr
-      tibble::column_to_rownames("rowname")  # Convert back to rownames
+      tibble::rownames_to_column("rowname") %>% # Convert rownames to column
+      dplyr::filter(!rowname %in% excluded_samples) %>% # Filter using dplyr
+      tibble::column_to_rownames("rowname") # Convert back to rownames
   }
 
   # If df has only one column, convert it to a data frame explicitly
@@ -565,7 +573,6 @@ impute_data <- function(
     imputation_method = "mean",
     col_features = NULL,
     col_LOD = NULL) {
-
   # Define valid imputation methods
   valid_imputation_methods <- c("LOD", "1/5th", "KNN", "PPCA", "median", "mean", "RF", "LCMD")
 
@@ -576,103 +583,109 @@ impute_data <- function(
 
   # Perform imputation based on selected method
   switch(imputation_method,
-         "LOD" = {
-           cat("## Imputation using LOD \n")
-           # Check if required arguments are provided for LOD imputation
-           if (is.null(df_meta_features) || is.null(col_features) || is.null(col_LOD)) {
-             stop("* df_meta_features, col_features, and col_LOD parameters must be provided when using 'LOD' imputation method.")
-           }
-           data_LOD <- stats::setNames(df_meta_features[[col_LOD]], df_meta_features[[col_features]])
-           replace_with_lod <- function(df, lod_vector) {
-             for (col in names(lod_vector)) {
-               if (col %in% names(df)) {
-                 df[[col]] <- ifelse(is.na(df[[col]]) | is.infinite(df[[col]]), lod_vector[[col]], df[[col]])
-               }
-             }
-             return(df)
-           }
-           df <- df %>% replace_with_lod(data_LOD) %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "1/5th" = {
-           cat("## Imputation using 1/5th lowest detected value \n")
-           df <- df %>%
-             dplyr::mutate(dplyr::across(tidyselect::where(is.numeric), ~ ifelse(is.na(.), 1/5 * min(., na.rm = TRUE), .))) %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "KNN" = {
-           cat("## Imputation using KNN \n")
-           df <- df %>%
-             as.matrix() %>% # Convert to matrix
-             t() %>% # Transpose the matrix
-             impute::impute.knn(colmax = 1) %>% # Perform KNN imputation
-             .$data %>% # Extract the imputed data
-             t() %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "PPCA" = {
-           cat("## Imputation using probabilistic PCA \n")
-           df <- df %>%
-             as.matrix() %>%
-             pcaMethods::pca(nPcs = 3, method = "PPCA") %>%
-             pcaMethods::completeObs() %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "median" = {
-           cat("## Imputation using median \n")
-           df <- df %>%
-             as.matrix() %>%
-             missMethods::impute_median(type = "columnwise") %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "mean" = {
-           cat("## Imputation using mean \n")
-           df <- df %>%
-             as.matrix() %>%
-             missMethods::impute_mean(type = "columnwise") %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         },
-         "RF" = {
-           cat("## Imputation using random forest \n")
-           cl <- parallel::makeCluster(7)
-           doParallel::registerDoParallel(cl)
-           df <- df %>%
-             as.matrix() %>%
-             missForest::missForest(parallelize = 'variables', verbose = TRUE) %>%
-             .$ximp %>% # Extract the imputed data
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-           parallel::stopCluster(cl)
-         },
-         "LCMD" = {
-           cat("## Imputation using LCMD method (QRILC with fallback to MinProb) \n")
-           df <- tryCatch({
-             imputeLCMD::impute.MAR.MNAR(as.matrix(df),
-                                         model.selector = imputeLCMD::model.Selector(df),
-                                         method.MNAR = 'QRILC')
-           }, error = function(e) {
-             cat("QRILC failed. Retrying with MinProb. Error: ", e$message, "\n")
-             imputeLCMD::impute.MAR.MNAR(as.matrix(df),
-                                         model.selector = imputeLCMD::model.Selector(df),
-                                         method.MNAR = 'MinProb')
-           }) %>%
-             tibble::as_tibble() %>%
-             tibble::add_column(id = rownames(df), .before = 1) %>%
-             tibble::column_to_rownames(var = "id")
-         }
+    "LOD" = {
+      cat("## Imputation using LOD \n")
+      # Check if required arguments are provided for LOD imputation
+      if (is.null(df_meta_features) || is.null(col_features) || is.null(col_LOD)) {
+        stop("* df_meta_features, col_features, and col_LOD parameters must be provided when using 'LOD' imputation method.")
+      }
+      data_LOD <- stats::setNames(df_meta_features[[col_LOD]], df_meta_features[[col_features]])
+      replace_with_lod <- function(df, lod_vector) {
+        for (col in names(lod_vector)) {
+          if (col %in% names(df)) {
+            df[[col]] <- ifelse(is.na(df[[col]]) | is.infinite(df[[col]]), lod_vector[[col]], df[[col]])
+          }
+        }
+        return(df)
+      }
+      df <- df %>%
+        replace_with_lod(data_LOD) %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "1/5th" = {
+      cat("## Imputation using 1/5th lowest detected value \n")
+      df <- df %>%
+        dplyr::mutate(dplyr::across(tidyselect::where(is.numeric), ~ ifelse(is.na(.), 1 / 5 * min(., na.rm = TRUE), .))) %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "KNN" = {
+      cat("## Imputation using KNN \n")
+      df <- df %>%
+        as.matrix() %>% # Convert to matrix
+        t() %>% # Transpose the matrix
+        impute::impute.knn(colmax = 1) %>% # Perform KNN imputation
+        .$data %>% # Extract the imputed data
+        t() %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "PPCA" = {
+      cat("## Imputation using probabilistic PCA \n")
+      df <- df %>%
+        as.matrix() %>%
+        pcaMethods::pca(nPcs = 3, method = "PPCA") %>%
+        pcaMethods::completeObs() %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "median" = {
+      cat("## Imputation using median \n")
+      df <- df %>%
+        as.matrix() %>%
+        missMethods::impute_median(type = "columnwise") %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "mean" = {
+      cat("## Imputation using mean \n")
+      df <- df %>%
+        as.matrix() %>%
+        missMethods::impute_mean(type = "columnwise") %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    },
+    "RF" = {
+      cat("## Imputation using random forest \n")
+      cl <- parallel::makeCluster(7)
+      doParallel::registerDoParallel(cl)
+      df <- df %>%
+        as.matrix() %>%
+        missForest::missForest(parallelize = "variables", verbose = TRUE) %>%
+        .$ximp %>% # Extract the imputed data
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+      parallel::stopCluster(cl)
+    },
+    "LCMD" = {
+      cat("## Imputation using LCMD method (QRILC with fallback to MinProb) \n")
+      df <- tryCatch(
+        {
+          imputeLCMD::impute.MAR.MNAR(as.matrix(df),
+            model.selector = imputeLCMD::model.Selector(df),
+            method.MNAR = "QRILC"
+          )
+        },
+        error = function(e) {
+          cat("QRILC failed. Retrying with MinProb. Error: ", e$message, "\n")
+          imputeLCMD::impute.MAR.MNAR(as.matrix(df),
+            model.selector = imputeLCMD::model.Selector(df),
+            method.MNAR = "MinProb"
+          )
+        }
+      ) %>%
+        tibble::as_tibble() %>%
+        tibble::add_column(id = rownames(df), .before = 1) %>%
+        tibble::column_to_rownames(var = "id")
+    }
   )
 
   return(df)
@@ -712,7 +725,6 @@ transform_data <- function(
     }
     LABEL_transformation <- "InvRank"
     LABEL_centre_scale <- "FALSE"
-
   }
   ## Log10 ====
   else if (transformation_method == "Log10") {
@@ -725,7 +737,6 @@ transform_data <- function(
       LABEL_transformation <- "Log10"
       LABEL_centre_scale <- "TRUE"
     }
-
   }
   ## Log10Capped ====
   else if (transformation_method == "Log10Capped") {
@@ -785,13 +796,15 @@ transform_data <- function(
 #'
 #' @examples
 #' \dontrun{
-#'   result <- outlier_pca_lof(df)
-#'   print(result$filtered_df)
-#'   print(result$plot_samples)
-#'   print(result$excluded_samples)
+#' result <- outlier_pca_lof(df)
+#' print(result$filtered_df)
+#' print(result$plot_samples)
+#' print(result$excluded_samples)
 #' }
 outlier_pca_lof <- function(
-    df) {
+    df,
+    return_ggplot = TRUE,
+    verbose = TRUE) {
   cat("# Outlier exclusion using PCA and LOF \n")
 
   # Check for missing values in the dataframe
@@ -811,33 +824,46 @@ outlier_pca_lof <- function(
     llof_samples <- bigutilsr::LOF(data_samples_analysis) # Compute distances using local outlier factor
     outliers_samples <- which(llof_samples > bigutilsr::tukey_mc_up(llof_samples)) # Identify outlier threshold
     id_samples_outlier <- rownames(data_samples_analysis[outliers_samples, ])
-    cat(paste0("## Excluded ", length(id_samples_outlier), " sample(s)\n"))
+    if (verbose) {
+      cat(paste0("## Excluded ", length(id_samples_outlier), " sample(s)\n"))
+    }
+
 
     # Step 3: Plot for sample outliers
-    cat("## Creating sample outlier plot\n")
+    if (verbose) {
+      cat("## Creating sample outlier plot\n")
+    }
     data_samples_analysis$llof <- llof_samples
-    plot_samples_outlier <- GGally::ggpairs(data_samples_analysis,
-                                            upper = list(continuous = "blank"),
-                                            diag = list(continuous = "blankDiag"),
-                                            lower = list(continuous = "points"),
-                                            columns = 1:10,
-                                            mapping = ggplot2::aes(color = llof),
-                                            legend = 11) +
-      ggplot2::scale_color_viridis_c(direction = -1, option = "F") +
-      ggplot2::labs(color = paste("Local outlier factor:", round(bigutilsr::tukey_mc_up(llof_samples), 2)),
-                    title = paste0("Samples to exclude: ", length(outliers_samples))) +
-      ggplot2::theme_minimal() +
-      ggplot2::theme(strip.background = ggplot2::element_rect(fill = "grey"),
-                     legend.position = "bottom",
-                     panel.spacing = grid::unit(1, "lines"))
-
+    if (return_ggplot) {
+      plot_samples_outlier <- GGally::ggpairs(data_samples_analysis,
+        upper = list(continuous = "blank"),
+        diag = list(continuous = "blankDiag"),
+        lower = list(continuous = "points"),
+        columns = 1:10,
+        mapping = ggplot2::aes(color = llof),
+        legend = 11
+      ) +
+        ggplot2::scale_color_viridis_c(direction = -1, option = "F") +
+        ggplot2::labs(
+          color = paste("Local outlier factor:", round(bigutilsr::tukey_mc_up(llof_samples), 2)),
+          title = paste0("Samples to exclude: ", length(outliers_samples))
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(
+          strip.background = ggplot2::element_rect(fill = "grey"),
+          legend.position = "bottom",
+          panel.spacing = grid::unit(1, "lines")
+        )
+    } else {
+      plot_samples_outlier <- NULL
+    }
     # Step 4: Exclude Outliers
     if (length(outliers_samples) > 0) {
       df <- df[!rownames(df) %in% id_samples_outlier, ] # Filter data
     }
 
     # Conditionally return df_meta_samples only if it's not NULL
-      return(list(df = df, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
+    return(list(df = df, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
   }
 }
 
