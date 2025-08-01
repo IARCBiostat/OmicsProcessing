@@ -780,26 +780,38 @@ transform_data <- function(
   return(list(df = df, transformation_method = LABEL_transformation, centre_scale = LABEL_centre_scale))
 }
 
-#' Perform PCA and Identify Outliers
+#' PCA-Based Outlier Detection Using LOF
 #'
-#' This function performs Principal Component Analysis (PCA) on the provided
-#' data frame and identifies outliers based on the Local Outlier Factor (LOF).
-#' It generates plots for sample outliers and excludes identified outliers from
-#' the original data frame.
+#' Performs Principal Component Analysis (PCA) on a data frame and identifies
+#' sample outliers using the Local Outlier Factor (LOF) method. Optionally
+#' returns a `ggplot2` pair plot of the PCA scores coloured by LOF. Samples
+#' detected as outliers are removed from the returned data.
 #'
-#' @param df A data frame containing the features to analyze. Rows represent samples
-#'           and columns represent features.
+#' @param df A data frame with samples in rows and features in columns.
+#'           Must not contain missing values.
+#' @param return_ggplot Logical; if `TRUE`, returns a `ggplot2` pair plot
+#'        highlighting outliers.
+#' @param verbose Logical; if `TRUE`, prints progress messages.
 #'
-#' @return A list containing the filtered data frame, the sample outlier plot,
-#'         and a vector of IDs of excluded samples.
+#' @return A list with the following elements:
+#' \describe{
+#'   \item{df}{Filtered data frame with outliers removed. If missing values
+#'             are present, the original input is returned unchanged.}
+#'   \item{plot_samples_outlier}{A `ggplot2` object showing PCA and LOF scores,
+#'                               or `NULL` if `return_ggplot = FALSE` or if
+#'                               missing values were found.}
+#'   \item{id_samples_outlier}{A character vector of sample IDs (rownames)
+#'                             identified as outliers, or `NULL` if skipped.}
+#' }
+#'
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' result <- outlier_pca_lof(df)
-#' print(result$filtered_df)
-#' print(result$plot_samples)
-#' print(result$excluded_samples)
+#' result <- outlier_pca_lof(df = my_data)
+#' head(result$df)
+#' print(result$plot_samples_outlier)
+#' result$id_samples_outlier
 #' }
 outlier_pca_lof <- function(
     df,
