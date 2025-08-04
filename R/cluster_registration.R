@@ -5,7 +5,8 @@
 #' @param num_cores The number of CPU cores to be used in the parallel cluster.
 #'
 #' @return A parallel cluster object registered for parallel processing.
-#'
+#' @export 
+#' 
 #' @examples
 #' \dontrun{
 #' # Example usage:
@@ -23,6 +24,7 @@ register_cluster <- function(num_cores) {
 #' This function unregisters a previously registered parallel cluster used for parallel processing in R.
 #' 
 #' @param cluster The parallel cluster object to be unregistered (default is NULL).
+#' @export 
 unregister_cluster <- function(cluster = NULL) {
     env <- foreach:::.foreachGlobals
     rm(list = ls(name = env), pos = env)
