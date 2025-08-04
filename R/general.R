@@ -41,3 +41,36 @@ resolve_target_cols <- function(df, target_cols) {
 
   return(target_cols)
 }
+
+
+#' Filter a list to match the formal arguments of a target function
+#'
+#' Removes elements from a list that are not formal arguments of a specified function.
+#' Optionally emits a warning for discarded elements.
+#'
+#' @param args A named list of arguments (e.g., user-supplied control list).
+#' @param fun A function object or function name to match arguments against.
+#' @param warn Logical; if TRUE, warns about arguments that are dropped. Default is TRUE.
+#'
+#' @return A filtered list containing only arguments accepted by the function.
+#' @export
+#'
+#' @examples
+#' control <- list(ntree = 100, bogus = 1)
+#' clean_args <- filter_function_args(control, missForest::missForest)
+#' # bogus is removed
+filter_function_args <- function(args, fun, warn = TRUE) {
+  if (!is.function(fun)) {
+    stop("`fun` must be a function or function name.")
+  }
+
+  allowed <- names(formals(fun))
+  invalid <- setdiff(names(args), c(allowed, "n_cores"))
+  
+  if (warn && length(invalid) > 0) {
+    warning("The following arguments are not accepted by ", deparse(substitute(fun)), " and were ignored: ",
+            paste(invalid, collapse = ", "))
+  }
+
+  args[names(args) %in% allowed]
+}
