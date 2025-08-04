@@ -2,29 +2,42 @@
 % Please edit documentation in R/process-data.R
 \name{outlier_pca_lof}
 \alias{outlier_pca_lof}
-\title{Perform PCA and Identify Outliers}
+\title{PCA-Based Outlier Detection Using LOF}
 \usage{
-outlier_pca_lof(df)
+outlier_pca_lof(df, return_ggplot = TRUE, verbose = TRUE)
 }
 \arguments{
-\item{df}{A data frame containing the features to analyze. Rows represent samples
-and columns represent features.}
+\item{df}{A data frame with samples in rows and features in columns.
+Must not contain missing values.}
+
+\item{return_ggplot}{Logical; if \code{TRUE}, returns a \code{ggplot2} pair plot
+highlighting outliers.}
+
+\item{verbose}{Logical; if \code{TRUE}, prints progress messages.}
 }
 \value{
-A list containing the filtered data frame, the sample outlier plot,
-and a vector of IDs of excluded samples.
+A list with the following elements:
+\describe{
+\item{df}{Filtered data frame with outliers removed. If missing values
+are present, the original input is returned unchanged.}
+\item{plot_samples_outlier}{A \code{ggplot2} object showing PCA and LOF scores,
+or \code{NULL} if \code{return_ggplot = FALSE} or if
+missing values were found.}
+\item{id_samples_outlier}{A character vector of sample IDs (rownames)
+identified as outliers, or \code{NULL} if skipped.}
+}
 }
 \description{
-This function performs Principal Component Analysis (PCA) on the provided
-data frame and identifies outliers based on the Local Outlier Factor (LOF).
-It generates plots for sample outliers and excludes identified outliers from
-the original data frame.
+Performs Principal Component Analysis (PCA) on a data frame and identifies
+sample outliers using the Local Outlier Factor (LOF) method. Optionally
+returns a \code{ggplot2} pair plot of the PCA scores coloured by LOF. Samples
+detected as outliers are removed from the returned data.
 }
 \examples{
 \dontrun{
-  result <- outlier_pca_lof(df)
-  print(result$filtered_df)
-  print(result$plot_samples)
-  print(result$excluded_samples)
+result <- outlier_pca_lof(df = my_data)
+head(result$df)
+print(result$plot_samples_outlier)
+result$id_samples_outlier
 }
 }
