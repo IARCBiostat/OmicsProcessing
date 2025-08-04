@@ -66,11 +66,47 @@ filter_function_args <- function(args, fun, warn = TRUE) {
 
   allowed <- names(formals(fun))
   invalid <- setdiff(names(args), c(allowed, "n_cores"))
-  
+
   if (warn && length(invalid) > 0) {
     warning("The following arguments are not accepted by ", deparse(substitute(fun)), " and were ignored: ",
             paste(invalid, collapse = ", "))
   }
 
   args[names(args) %in% allowed]
+}
+
+
+#' Validate a Data Frame for LCMD Imputation
+#'
+#' Ensures the input is a data frame with at least 1 column, 2 rows,
+#' and that all columns are numeric.
+#'
+#' @param df An object to be validated.
+#'
+#' @return TRUE if the input passes all checks; otherwise throws an error.
+#' @export
+check_dataframe_validity <- function(df) {
+  if (is.null(df)) {
+    stop("Input is NULL.")
+  }
+
+  if (!is.data.frame(df)) {
+    stop("Input is not a data frame.")
+  }
+
+  if (ncol(df) < 1) {
+    stop("Data frame must have at least 1 column.")
+  }
+
+  if (nrow(df) < 2) {
+    stop("Data frame must have at least 2 rows.")
+  }
+
+  non_numeric <- !vapply(df, is.numeric, logical(1))
+  if (any(non_numeric)) {
+    stop("All columns must be numeric. Non-numeric columns: ",
+         paste(names(df)[non_numeric], collapse = ", "))
+  }
+
+  return(TRUE)
 }
