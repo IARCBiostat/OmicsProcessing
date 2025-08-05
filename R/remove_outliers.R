@@ -67,6 +67,7 @@ remove_outliers <- function(df,
     # Split QC and non-QC
     df_qc <- df[is_qc, , drop = FALSE]
     df_non_qc <- df[!is_qc, , drop = FALSE]
+    check_dataframe_validity(df_non_qc[, target_cols])
 
     # Save NA mask before imputation
     na_mask <- is.na(df_non_qc[, target_cols, drop = FALSE])
