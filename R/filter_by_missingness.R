@@ -83,22 +83,7 @@ filter_by_missingness <- function(df,
     stop("`is_qc` must be a logical vector with the same length as nrow(df).")
   }
 
-  # Determine target columns
-  if (is.null(target_cols)) {
-    target_cols <- names(df)
-  } else if (length(target_cols) == 1) { # Assume regex
-    target_cols_matched <- grep(target_cols, names(df), value = TRUE)
-    if (length(target_cols_matched) == 0) {
-      stop("No columns matched the regular expression in `target_cols`.")
-    }
-    target_cols <- target_cols_matched
-  } else {  # Explicit column names
-    missing_cols <- setdiff(target_cols, names(df))
-    if (length(missing_cols) > 0) {
-      stop("The following `target_cols` are not in the dataframe: ", 
-           paste(missing_cols, collapse = ", "))
-    }
-  }
+  target_cols <- resolve_target_cols(df, target_cols)
 
   df_filtered <- df
   non_target_cols <- setdiff(names(df), target_cols)
