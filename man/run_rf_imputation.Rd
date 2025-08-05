@@ -54,9 +54,9 @@ run_rf_imputation(df, target_cols = c("a", "b"))
 
 # Use regex to select columns and customize RF parameters
 run_rf_imputation(
-  df,
-  target_cols = "^a|b$",
-  control_RF = list(ntree = 200, mtry = 1, n_cores = 4)
+    df,
+    target_cols = "^a|b$",
+    control_RF = list(ntree = 200, mtry = 1, n_cores = 4)
 )
 }
 

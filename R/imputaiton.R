@@ -45,16 +45,16 @@
 #'
 #' # Use regex to select columns and customize RF parameters
 #' run_rf_imputation(
-#'   df,
-#'   target_cols = "^a|b$",
-#'   control_RF = list(ntree = 200, mtry = 1, n_cores = 4)
+#'     df,
+#'     target_cols = "^a|b$",
+#'     control_RF = list(ntree = 200, mtry = 1, n_cores = 4)
 #' )
 #' }
 #'
 #' @export
 run_rf_imputation <- function(df, target_cols, control_RF = list()) {
     target_cols <- resolve_target_cols(df, target_cols)
-
+    check_dataframe_validity(as.data.frame(df[, target_cols, drop = FALSE]))
     rf_defaults <- list(
         xmis = as.data.frame(df[, target_cols, drop = FALSE]),
         parallelize = "variables",
@@ -105,4 +105,61 @@ run_rf_imputation <- function(df, target_cols, control_RF = list()) {
     }
 
     list(imputed = rf_result$ximp, oob = feature_oob)
+}
+
+#' Run LCMD Imputation (Overall)
+#'
+#' Performs left-censored missing data (LCMD) imputation using
+#' \code{imputeLCMD::impute.MAR.MNAR()} in overall mode.
+#'
+#' @param df A data frame containing the data to impute.
+#' @param target_cols A character vector of column names to be imputed.
+#' @param control_LCMD A named list of optional arguments:
+#'   \describe{
+#'     \item{\code{method.MAR}}{Method for MAR imputation (e.g., "KNN").}
+#'     \item{\code{method.MNAR}}{Method for MNAR imputation (e.g., "QRILC", "MinProb").}
+#'     Additional arguments accepted by \code{imputeLCMD::impute.MAR.MNAR()} may also be included.
+#'   }
+#'
+#' @return A data frame of the same shape and order as the input, with imputed values.
+#' @export
+run_lcmd_imputation <- function(df, target_cols, control_LCMD = list()) {
+    target_cols <- resolve_target_cols(df, target_cols)
+
+    data_to_impute <- df[, target_cols, drop = FALSE]
+    check_dataframe_validity(data_to_impute)
+    
+    default_args <- list(
+        method.MAR = "KNN",
+        method.MNAR = "QRILC"
+    )
+
+    # Set all values as MNAR in the model selector
+    model_selector <- imputeLCMD::model.Selector(data_to_impute)
+    model_selector[[1]] <- rep(0, length(model_selector[[1]])) # 0 = MNAR
+
+    imputation_args <- modifyList(
+        c(
+            list(dataSet.mvs = as.matrix(data_to_impute), model.selector = model_selector),
+            default_args
+        ),
+        control_LCMD
+    )
+
+    imputation_args <- filter_function_args(imputation_args, imputeLCMD::impute.MAR.MNAR)
+
+    result <- try(
+        do.call(imputeLCMD::impute.MAR.MNAR, imputation_args),
+        silent = TRUE
+    )
+
+    if (inherits(result, "try-error")) {
+        stop("LCMD imputation failed: ", conditionMessage(attr(result, "condition")))
+    }
+
+    imputed_df <- as.data.frame(result)
+    rownames(imputed_df) <- rownames(data_to_impute)
+    colnames(imputed_df) <- target_cols
+
+    return(imputed_df)
 }
