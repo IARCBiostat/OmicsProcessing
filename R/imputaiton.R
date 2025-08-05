@@ -57,7 +57,7 @@ run_rf_imputation <- function(df, target_cols, control_RF = list()) {
     check_dataframe_validity(as.data.frame(df[, target_cols, drop = FALSE]))
     rf_defaults <- list(
         xmis = as.data.frame(df[, target_cols, drop = FALSE]),
-        parallelize = "variables",
+        parallelize = "no",
         mtry = floor(sqrt(length(target_cols))),
         ntree = 100,
         maxiter = 10,
