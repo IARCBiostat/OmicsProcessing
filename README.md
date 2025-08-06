@@ -288,7 +288,7 @@ The behavior of the imputation methods used in `OmicsProcession::hybrid_imputati
 To customize `missForest::missForest()`:
 
 ```r
-control_RF <- list(
+my_control_RF <- list(
   parallelize = "no",
   mtry = floor(sqrt(length(target_cols))),
   ntree = 100,
@@ -302,7 +302,7 @@ control_RF <- list(
 To customize `imputeLCMD::impute.MAR.MNAR()`:
 
 ```r
-control_LCMD <- list(
+my_control_LCMD <- list(
   method.MAR = "KNN",
   method.MNAR = "QRILC"
 )
@@ -313,8 +313,8 @@ These can then be passed to the imputation call as:
 ```r
 df_rf_lcmd_hybrid <- OmicsProcession::hybrid_imputation(
   ...,
-  control_LCMD = control_LCMD,
-  control_RF = control_RF
+  control_LCMD = my_control_LCMD,
+  control_RF = my_control_RF
 )
 ```
 
