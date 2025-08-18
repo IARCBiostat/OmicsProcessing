@@ -2,7 +2,7 @@
 % Please edit documentation in R/filter_by_missingness.R
 \name{filter_by_missingness}
 \alias{filter_by_missingness}
-\title{Filter a data frame by missingness in selected rows and columns}
+\title{Filter a data.frame by missingness in rows and columns}
 \usage{
 filter_by_missingness(
   df,
@@ -10,83 +10,101 @@ filter_by_missingness(
   col_thresh = 0.5,
   target_cols = NULL,
   is_qc = NULL,
-  filter_order = c("simultaneous", "col_then_row", "row_then_col")
+  filter_order = c("simultaneous", "col_then_row", "row_then_col", "iterative"),
+  max_iter = 10
 )
 }
 \arguments{
-\item{df}{A data frame to filter.}
+\item{df}{A data.frame.}
 
-\item{row_thresh}{Numeric value between 0 and 1. Maximum allowed proportion
-of missing values per row (excluding QC rows). Default is 0.5.}
+\item{row_thresh}{Proportion of missing values allowed per (non-QC) row in target columns.}
 
-\item{col_thresh}{Numeric value between 0 and 1. Maximum allowed proportion
-of missing values per column (calculated across non-QC rows). Default is 0.5.}
+\item{col_thresh}{Proportion of missing values allowed per column in target columns.}
 
-\item{target_cols}{Either a character vector of column names or a single
-string interpreted as a regular expression. Used to select columns for
-missingness filtering. If \code{NULL}, all columns are used.}
+\item{target_cols}{Character vector of target columns. If NULL, resolved by \code{resolve_target_cols()}.}
 
-\item{is_qc}{Optional logical vector indicating QC rows. If \code{NULL},
-all rows are treated as analytical samples (i.e., no QC rows).}
+\item{is_qc}{Logical vector the same length as \code{nrow(df)} indicating QC rows (always retained).}
 
-\item{filter_order}{Character string indicating the filtering mode.
-One of \code{"simultaneous"} (default), \code{"col_then_row"}, or
-\code{"row_then_col"}.}
+\item{filter_order}{One of \code{"simultaneous"}, \code{"col_then_row"}, \code{"row_then_col"}, or \code{"iterative"}.
+\itemize{
+\item \code{"simultaneous"}: filter rows and columns independently, then intersect results.
+\item \code{"col_then_row"}: filter columns first, then rows.
+\item \code{"row_then_col"}: filter rows first, then columns.
+\item \code{"iterative"}: alternately filter rows and columns until stable or \code{max_iter} is reached.
+}}
+
+\item{max_iter}{Maximum number of iterations when \code{filter_order="iterative"}. Default 10.}
 }
 \value{
-A filtered data frame with:
-\itemize{
-\item Retained columns: all non-target columns, plus only target columns
-that pass the \code{col_thresh}.
-\item Retained rows: all QC rows, plus non-QC rows that pass the
-\code{row_thresh} based on selected columns.
-}
+Filtered data.frame with a subset of rows and/or columns.
 }
 \description{
-This function filters rows and columns from a data frame based on missing
-value thresholds. Missingness is calculated using a selected subset of
-columns, defined either by a regular expression or an explicit list of
-column names. QC samples can optionally be excluded from the filtering
-process and are always retained in the output.
-}
-\details{
-The function works on any data frame, including those that do not contain
-QC samples (set \code{is_qc = NULL} or leave it empty), and can also be
-applied to all columns (by setting \code{target_cols = NULL} or leaving
-it empty).
-
-QC samples (identified using the \code{is_qc} logical vector) are excluded
-from all missingness calculations, but retained in the output. This ensures
-that filtering is based solely on analytical samples, while preserving QC
-rows for downstream inspection or diagnostics.
-
-Users can optionally control the order in which row and column filtering is
-applied using the \code{filter_order} argument. The default is
-\code{"simultaneous"}, which performs both row and column filtering at once.
-Sequential filtering modes (\code{"col_then_row"} or \code{"row_then_col"})
-may be useful for fine-tuning missingness cleanup in certain datasets.
+Applies different strategies to filter rows and columns of a dataset based on
+missingness thresholds. Supports iterative refinement until stable.
 }
 \examples{
+# Example dataset with deliberate missingness
 df <- data.frame(
-  A = c(1, NA, 3, NA),
-  B = c(1, 2, NA, NA),
-  C = 1:4,
-  qc = c(FALSE, TRUE, FALSE, TRUE)
+  a = c(NA, 1, NA, 1, NA),
+  b = c(NA, NA, 2, 2, NA),
+  c = c(3, NA, NA, 3, NA),
+  d = 1
 )
 
-# 1. Use explicit column list and QC exclusion
-filter_by_missingness(df, target_cols = c("A", "B"), is_qc = df$qc)
+# Mark row 2 and 5 as QC (always kept, but excluded from filtering thresholds)
+is_qc <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+target_cols <- c("a","b","c")
 
-# 2. Use regex to select columns
-filter_by_missingness(df, target_cols = "^A|B$", is_qc = df$qc)
+# Original
+print(df)
+#    a  b  c d
+# 1 NA NA  3 1
+# 2  1 NA NA 1
+# 3 NA  2 NA 1
+# 4  1  2  3 1
+# 5 NA NA NA 1
 
-# 3. Apply to all columns and assume all rows are non-QC
-filter_by_missingness(df)
+# Iterative filtering
+print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+                            target_cols=target_cols, is_qc=is_qc,
+                            filter_order="iterative"))
+# [1] "iteration"
+#    b  c d
+# 1 NA  3 1
+# 2 NA NA 1
+# 3  2 NA 1
+# 4  2  3 1
+# 5 NA NA 1
 
-# 4. Remove columns first, then rows
-filter_by_missingness(df, filter_order = "col_then_row")
+# Simultaneous filtering
+print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+                            target_cols=target_cols, is_qc=is_qc,
+                            filter_order="simultaneous"))
+# [1] "simultaneous"
+#    b  c d
+# 2 NA NA 1
+# 4  2  3 1
+# 5 NA NA 1
 
-# 5. Remove rows first, then columns
-filter_by_missingness(df, filter_order = "row_then_col")
+# Column-then-row filtering
+print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+                            target_cols=target_cols, is_qc=is_qc,
+                            filter_order="col_then_row"))
+#    b  c d
+# 1 NA  3 1
+# 2 NA NA 1
+# 3  2 NA 1
+# 4  2  3 1
+# 5 NA NA 1
 
+# Row-then-column filtering
+print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+                            target_cols=target_cols, is_qc=is_qc,
+                            filter_order="row_then_col"))
+#    a  b  c d
+# 2  1 NA NA 1
+# 4  1  2  3 1
+# 5 NA NA NA 1
+
+For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
 }

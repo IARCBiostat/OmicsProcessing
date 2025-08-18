@@ -1,80 +1,153 @@
-#' Filter a data frame by missingness in selected rows and columns
+#' Select target columns to keep based on missingness
 #'
-#' This function filters rows and columns from a data frame based on missing 
-#' value thresholds. Missingness is calculated using a selected subset of 
-#' columns, defined either by a regular expression or an explicit list of 
-#' column names. QC samples can optionally be excluded from the filtering 
-#' process and are always retained in the output.
+#' Computes per-column NA proportions on the provided non-QC rows of the dataset
+#' and returns the subset of target columns that meet the threshold.
 #'
-#' The function works on any data frame, including those that do not contain 
-#' QC samples (set \code{is_qc = NULL} or leave it empty), and can also be 
-#' applied to all columns (by setting \code{target_cols = NULL} or leaving 
-#' it empty).
+#' @param df A data.frame.
+#' @param rows_idx_non_qc Integer indices of rows to include in the calculation (should exclude QC rows).
+#' @param target_cols Character vector of target column names.
+#' @param col_thresh Numeric. Maximum allowed proportion of missing values per column.
 #'
-#' QC samples (identified using the \code{is_qc} logical vector) are excluded 
-#' from all missingness calculations, but retained in the output. This ensures 
-#' that filtering is based solely on analytical samples, while preserving QC 
-#' rows for downstream inspection or diagnostics.
+#' @return Character vector of target column names to keep.
+#' @keywords internal
+cols_keep_from_rows <- function(df, rows_idx_non_qc, target_cols, col_thresh) {
+  if (length(target_cols) == 0L) return(character(0))
+  if (length(rows_idx_non_qc) == 0L) return(character(0))
+  props <- colMeans(is.na(df[rows_idx_non_qc, target_cols, drop = FALSE]))
+  names(props)[props <= col_thresh]
+}
+
+#' Select rows to keep based on missingness
 #'
-#' Users can optionally control the order in which row and column filtering is 
-#' applied using the \code{filter_order} argument. The default is 
-#' \code{"simultaneous"}, which performs both row and column filtering at once. 
-#' Sequential filtering modes (\code{"col_then_row"} or \code{"row_then_col"}) 
-#' may be useful for fine-tuning missingness cleanup in certain datasets.
+#' Computes per-row NA proportions across the provided target columns.  
+#' QC rows (`is_qc_full == TRUE`) are always retained.
 #'
-#' @param df A data frame to filter.
-#' @param row_thresh Numeric value between 0 and 1. Maximum allowed proportion 
-#'   of missing values per row (excluding QC rows). Default is 0.5.
-#' @param col_thresh Numeric value between 0 and 1. Maximum allowed proportion 
-#'   of missing values per column (calculated across non-QC rows). Default is 0.5.
-#' @param target_cols Either a character vector of column names or a single 
-#'   string interpreted as a regular expression. Used to select columns for 
-#'   missingness filtering. If \code{NULL}, all columns are used.
-#' @param is_qc Optional logical vector indicating QC rows. If \code{NULL}, 
-#'   all rows are treated as analytical samples (i.e., no QC rows).
-#' @param filter_order Character string indicating the filtering mode.
-#'   One of \code{"simultaneous"} (default), \code{"col_then_row"}, or 
-#'   \code{"row_then_col"}.
+#' @param df A data.frame.
+#' @param cols_target Character vector of target column names (subset of `names(df)`).
+#' @param row_thresh Numeric. Maximum allowed proportion of missing values per row.
+#' @param is_qc_full Logical vector of length `nrow(df)`; TRUE for QC rows.
 #'
-#' @return A filtered data frame with:
-#' \itemize{
-#'   \item Retained columns: all non-target columns, plus only target columns 
-#'         that pass the \code{col_thresh}.
-#'   \item Retained rows: all QC rows, plus non-QC rows that pass the 
-#'         \code{row_thresh} based on selected columns.
-#' }
+#' @return Integer indices of rows to keep.
+#' @keywords internal
+rows_keep_from_cols <- function(df, cols_target, row_thresh, is_qc_full) {
+  n <- nrow(df)
+  if (n == 0L) return(integer(0))
+  if (length(cols_target) == 0L) {
+    return(seq_len(n)) # keep all rows if no target columns
+  }
+  na_prop <- rowMeans(is.na(df[, cols_target, drop = FALSE]))
+  keep_non_qc <- which(!is_qc_full & (na_prop <= row_thresh))
+  keep_qc     <- which(is_qc_full)
+  sort(unique(c(keep_non_qc, keep_qc)))
+}
+
+#' Finalize kept columns
+#'
+#' Always keeps the non-target columns alongside the retained target columns.
+#'
+#' @param target_cols_kept Character vector of retained target columns.
+#' @param non_target_cols Character vector of non-target column names.
+#' @param all_names Character vector of all column names in the dataset.
+#'
+#' @return Character vector of final kept column names.
+#' @keywords internal
+final_cols <- function(target_cols_kept, non_target_cols, all_names) {
+  intersect(all_names, unique(c(non_target_cols, target_cols_kept)))
+}
+
+#' Filter a data.frame by missingness in rows and columns
+#'
+#' Applies different strategies to filter rows and columns of a dataset based on
+#' missingness thresholds. Supports iterative refinement until stable.
+#'
+#' @param df A data.frame.
+#' @param row_thresh Proportion of missing values allowed per (non-QC) row in target columns.
+#' @param col_thresh Proportion of missing values allowed per column in target columns.
+#' @param target_cols Character vector of target columns. If NULL, resolved by `resolve_target_cols()`.
+#' @param is_qc Logical vector the same length as `nrow(df)` indicating QC rows (always retained).
+#' @param filter_order One of `"simultaneous"`, `"col_then_row"`, `"row_then_col"`, or `"iterative"`.
+#'   * `"simultaneous"`: filter rows and columns independently, then intersect results.
+#'   * `"col_then_row"`: filter columns first, then rows.
+#'   * `"row_then_col"`: filter rows first, then columns.
+#'   * `"iterative"`: alternately filter rows and columns until stable or `max_iter` is reached.
+#' @param max_iter Maximum number of iterations when `filter_order="iterative"`. Default 10.
+#'
+#' @return Filtered data.frame with a subset of rows and/or columns.
 #'
 #' @examples
+#' # Example dataset with deliberate missingness
 #' df <- data.frame(
-#'   A = c(1, NA, 3, NA),
-#'   B = c(1, 2, NA, NA),
-#'   C = 1:4,
-#'   qc = c(FALSE, TRUE, FALSE, TRUE)
+#'   a = c(NA, 1, NA, 1, NA),
+#'   b = c(NA, NA, 2, 2, NA),
+#'   c = c(3, NA, NA, 3, NA),
+#'   d = 1
 #' )
 #'
-#' # 1. Use explicit column list and QC exclusion
-#' filter_by_missingness(df, target_cols = c("A", "B"), is_qc = df$qc)
+#' # Mark row 2 and 5 as QC (always kept, but excluded from filtering thresholds)
+#' is_qc <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+#' target_cols <- c("a","b","c")
 #'
-#' # 2. Use regex to select columns
-#' filter_by_missingness(df, target_cols = "^A|B$", is_qc = df$qc)
+#' # Original
+#' print(df)
+#' #    a  b  c d
+#' # 1 NA NA  3 1
+#' # 2  1 NA NA 1
+#' # 3 NA  2 NA 1
+#' # 4  1  2  3 1
+#' # 5 NA NA NA 1
 #'
-#' # 3. Apply to all columns and assume all rows are non-QC
-#' filter_by_missingness(df)
+#' # Iterative filtering
+#' print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+#'                             target_cols=target_cols, is_qc=is_qc,
+#'                             filter_order="iterative"))
+#' # [1] "iteration"
+#' #    b  c d
+#' # 1 NA  3 1
+#' # 2 NA NA 1
+#' # 3  2 NA 1
+#' # 4  2  3 1
+#' # 5 NA NA 1
 #'
-#' # 4. Remove columns first, then rows
-#' filter_by_missingness(df, filter_order = "col_then_row")
+#' # Simultaneous filtering
+#' print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+#'                             target_cols=target_cols, is_qc=is_qc,
+#'                             filter_order="simultaneous"))
+#' # [1] "simultaneous"
+#' #    b  c d
+#' # 2 NA NA 1
+#' # 4  2  3 1
+#' # 5 NA NA 1
 #'
-#' # 5. Remove rows first, then columns
-#' filter_by_missingness(df, filter_order = "row_then_col")
+#' # Column-then-row filtering
+#' print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+#'                             target_cols=target_cols, is_qc=is_qc,
+#'                             filter_order="col_then_row"))
+#' #    b  c d
+#' # 1 NA  3 1
+#' # 2 NA NA 1
+#' # 3  2 NA 1
+#' # 4  2  3 1
+#' # 5 NA NA 1
 #'
+#' # Row-then-column filtering
+#' print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
+#'                             target_cols=target_cols, is_qc=is_qc,
+#'                             filter_order="row_then_col"))
+#' #    a  b  c d
+#' # 2  1 NA NA 1
+#' # 4  1  2  3 1
+#' # 5 NA NA NA 1
+#'
+#' For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
 #' @export
 filter_by_missingness <- function(df,
                                   row_thresh = 0.5,
                                   col_thresh = 0.5,
                                   target_cols = NULL,
                                   is_qc = NULL,
-                                  filter_order = c("simultaneous", "col_then_row", "row_then_col")) {
-  filter_order <- match.arg(filter_order) #set default to "simultaneous"
+                                  filter_order = c("simultaneous", "col_then_row", "row_then_col", "iterative"),
+                                  max_iter = 10) {
+  filter_order <- match.arg(filter_order)
 
   if (is.null(is_qc)) {
     is_qc <- rep(FALSE, nrow(df))
@@ -84,88 +157,58 @@ filter_by_missingness <- function(df,
   }
 
   target_cols <- resolve_target_cols(df, target_cols)
-
-  df_filtered <- df
   non_target_cols <- setdiff(names(df), target_cols)
 
+  rows_non_qc <- which(!is_qc)
+
   if (filter_order == "simultaneous") {
-    df_non_qc <- df[!is_qc, , drop = FALSE]
-    col_na_prop <- colMeans(is.na(df_non_qc[, target_cols, drop = FALSE]))
-    target_cols_kept <- names(col_na_prop)[col_na_prop <= col_thresh]
-    row_na_prop <- rowMeans(is.na(df_non_qc[, target_cols, drop = FALSE]))
-    rows_to_keep_non_qc <- which(row_na_prop <= row_thresh)
-    all_rows_to_keep <- c(which(!is_qc)[rows_to_keep_non_qc], which(is_qc))
-    all_rows_to_keep <- sort(unique(all_rows_to_keep))
-    final_cols <- c(non_target_cols, target_cols_kept)
-    df_filtered <- df[all_rows_to_keep, final_cols, drop = FALSE]
+    target_cols_kept <- cols_keep_from_rows(df, rows_non_qc, target_cols, col_thresh)
+    rows_keep_idx <- rows_keep_from_cols(df, target_cols, row_thresh, is_qc)
+
 
   } else if (filter_order == "col_then_row") {
-    df_filtered <- filter_columns(df_filtered, is_qc, target_cols, col_thresh, non_target_cols)
-    target_cols <- intersect(names(df_filtered), target_cols)
-    row_filter_out <- filter_rows(df_filtered, is_qc, target_cols, row_thresh)
-    df_filtered <- row_filter_out$data 
+    target_cols_kept <- cols_keep_from_rows(df, rows_non_qc, target_cols, col_thresh)
+    rows_keep_idx <- rows_keep_from_cols(df[, target_cols_kept, drop = FALSE], target_cols_kept, row_thresh, is_qc)
 
   } else if (filter_order == "row_then_col") {
-    row_filter_out <- filter_rows(df_filtered, is_qc, target_cols, row_thresh)
-    is_qc <- row_filter_out$mask_qc
-    df_filtered <- row_filter_out$data
-    df_filtered <- filter_columns(df_filtered, is_qc, target_cols, col_thresh, non_target_cols)
+    rows_keep_idx <- rows_keep_from_cols(df, target_cols, row_thresh, is_qc)
+    rows_non_qc_kept <- intersect(rows_keep_idx, rows_non_qc)
+    target_cols_kept <- cols_keep_from_rows(df, rows_non_qc_kept, target_cols, col_thresh)
+
+  } else if (filter_order == "iterative") {
+    n <- nrow(df)
+    rows_keep_idx <- seq_len(n)
+    
+    target_cols_kept <- cols_keep_from_rows(df, rows_non_qc, target_cols, col_thresh)
+    kept_cols <- final_cols(target_cols_kept, non_target_cols, names(df))
+
+    prev_rows <- integer()
+    prev_cols <- character()
+    iter <- 0L
+
+    repeat {
+      iter <- iter + 1L
+      kept_target_cols <- intersect(kept_cols, target_cols)
+      rows_keep_idx <- rows_keep_from_cols(df[, kept_cols, drop = FALSE], kept_target_cols, row_thresh, is_qc)
+
+      rows_non_qc_now <- intersect(rows_keep_idx, rows_non_qc)
+      target_cols_kept <- cols_keep_from_rows(df, rows_non_qc_now, target_cols, col_thresh)
+      kept_cols <- final_cols(target_cols_kept, non_target_cols, names(df))
+
+      kept_target_cols <- intersect(kept_cols, target_cols)
+      rows_keep_idx <- rows_keep_from_cols(df[, kept_cols, drop = FALSE], kept_target_cols, row_thresh, is_qc)
+
+      cur_cols_target <- sort(intersect(kept_cols, target_cols))
+      stable <- identical(sort(rows_keep_idx), sort(prev_rows)) &&
+                identical(cur_cols_target, sort(prev_cols))
+      if (stable || iter >= max_iter) break
+
+      prev_rows <- rows_keep_idx
+      prev_cols <- cur_cols_target
+    } 
   }
 
-  return(df_filtered)
-}
-
-#' Filter columns by missingness threshold
-#'
-#' Filters columns in a data frame by calculating the proportion of missing 
-#' values in the selected target columns, excluding QC samples. Only target 
-#' columns with missingness less than or equal to the column threshold are kept.
-#' All non-target columns are always retained.
-#'
-#' @param data A data frame to filter.
-#' @param mask_qc Logical vector indicating QC rows. These rows are excluded 
-#'   from the column-wise missingness calculation.
-#' @param target_cols Character vector of column names to assess for filtering.
-#' @param col_thresh Maximum allowed missingness in a column (0–1).
-#' @param non_target_cols Character vector of column names that are always 
-#'   retained regardless of missingness.
-#'
-#' @return A filtered data frame with selected target columns removed.
-#' @keywords internal
-filter_columns <- function(data, mask_qc, target_cols, col_thresh, non_target_cols) {
-  col_na_prop <- colMeans(is.na(data[!mask_qc, target_cols, drop = FALSE]))
-  print(col_na_prop)
-  target_cols_kept <- names(col_na_prop)[col_na_prop <= col_thresh]
-  print(col_na_prop <= col_thresh)
-  kept_cols <- c(non_target_cols, target_cols_kept)
-  data[, kept_cols, drop = FALSE]
-}
-
-#' Filter rows by missingness threshold
-#'
-#' Filters rows in a data frame by calculating the proportion of missing 
-#' values across the selected target columns, excluding QC rows from the 
-#' filtering. QC rows are always retained in the output.
-#'
-#' @param data A data frame to filter.
-#' @param mask_qc Logical vector indicating QC rows.
-#' @param target_cols Character vector of column names to use in row filtering.
-#' @param row_thresh Maximum allowed missingness in a row (0–1).
-#'
-#' @return A list with two elements:
-#' \itemize{
-#'   \item \code{data}: The filtered data frame.
-#'   \item \code{mask_qc}: The logical QC vector corresponding to the rows 
-#'         retained in the filtered data.
-#' }
-#' @keywords internal
-filter_rows <- function(data, mask_qc, target_cols, row_thresh) {
-  row_na_prop <- rowMeans(is.na(data[!mask_qc, target_cols, drop = FALSE]))
-  keep_idx_non_qc <- which(row_na_prop <= row_thresh)
-  final_rows <- c(which(!mask_qc)[keep_idx_non_qc], which(mask_qc))
-  final_rows <- sort(unique(final_rows))
-  filtered_data <- data[final_rows, , drop = FALSE]
-  filtered_mask_qc <- mask_qc[final_rows]
-
-  list(data = filtered_data, mask_qc = filtered_mask_qc)
+  rows_keep_idx <- sort(unique(c(rows_keep_idx, which(is_qc))))
+  kept_cols <- final_cols(target_cols_kept, non_target_cols, names(df))
+  return(df[rows_keep_idx, kept_cols, drop = FALSE])
 }
