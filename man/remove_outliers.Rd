@@ -2,7 +2,7 @@
 % Please edit documentation in R/remove_outliers.R
 \name{remove_outliers}
 \alias{remove_outliers}
-\title{Remove Outliers from a Data Frame}
+\title{Remove outliers (optionally stratified) using PCA + LOF}
 \usage{
 remove_outliers(
   df,
@@ -11,62 +11,91 @@ remove_outliers(
   method = c("pca-lof-overall"),
   impute_method = c(NULL, "half-min-value"),
   restore_missing_values = TRUE,
-  return_ggplots = FALSE
+  return_ggplots = FALSE,
+  strata = NULL
+)
+
+remove_outliers(
+  df,
+  target_cols = NULL,
+  is_qc = NULL,
+  method = c("pca-lof-overall"),
+  impute_method = c(NULL, "half-min-value"),
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE,
+  strata = NULL
 )
 }
 \arguments{
-\item{df}{A data frame with samples in rows and features in columns.}
+\item{df}{A data.frame with features in columns and samples in rows.}
 
-\item{target_cols}{Either a character vector of column names to include
-in the analysis, or a single regular expression string to match
-column names. If \code{NULL}, all columns are used.}
+\item{target_cols}{Character vector of column names (or tidyselect helpers if supported by \code{resolve_target_cols()}).
+If \code{NULL}, uses \code{resolve_target_cols(df, NULL)} to infer targets.}
 
-\item{is_qc}{A logical vector indicating which rows are QC samples. If
-\code{NULL}, all samples are treated as non-QC.}
+\item{is_qc}{Logical vector (length \code{nrow(df)}) marking QC rows to exclude from detection. Defaults to all \code{FALSE}.}
 
-\item{method}{Outlier detection method. Currently only
-\code{"pca-lof-overall"} is supported.}
+\item{method}{Character; currently supports \code{"pca-lof-overall"} (default behavior).}
 
-\item{impute_method}{Optional method for imputing missing values prior to
-outlier detection. One of \code{NULL} (no imputation) or
-\code{"half-min-value"}.}
+\item{impute_method}{\code{NULL} or \code{"half-min-value"}. If set, imputation is applied \strong{within each stratum} on \code{target_cols}.}
 
-\item{restore_missing_values}{Logical; if \code{TRUE}, restores original \code{NA}
-values to the filtered data.}
+\item{restore_missing_values}{Logical; if \code{TRUE}, original \code{NA}s in \code{target_cols} are restored after filtering.}
 
-\item{return_ggplots}{Logical; if \code{TRUE}, returns a ggplot of the
-outlier detection.}
+\item{return_ggplots}{Logical; if \code{TRUE}, returns a named list of ggplots per stratum.}
+
+\item{strata}{\code{NULL} (default), a single column name in \code{df}, or an external vector of length \code{nrow(df)}.
+When provided, outlier detection is run independently within each stratum (QC rows always excluded within the stratum).}
 }
 \value{
-A list with the following elements:
+A list with:
 \describe{
-\item{df_filtered}{Data frame with outliers removed from non-QC samples,
-QC rows retained, and original row order preserved
-(excluding removed outliers).}
-\item{plot_samples_outlier}{A \code{ggplot2} object visualising outlier detection.}
-\item{excluded_ids}{Character vector of sample IDs (rownames) identified
-and removed as outliers.}
+\item{df_filtered}{\code{df} with detected outlier rows removed (QC rows always retained).}
+\item{excluded_ids}{Character vector of row names removed (union across strata).}
+\item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of ggplot objects per stratum; otherwise \code{NULL}.}
+}
+
+A list with:
+\describe{
+\item{df_filtered}{\code{df} with detected outlier rows removed (QC rows always retained).}
+\item{excluded_ids}{Character vector of row names removed (union across strata).}
+\item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of ggplot objects per stratum; otherwise \code{NULL}.}
 }
 }
 \description{
-Detects and removes outliers from the non-QC portion of a data frame
-using a specified method (currently supports \code{"pca-lof-overall"}).
-Users can specify which columns to analyse using a regular expression
-or a character vector of column names. Optional imputation is supported
-for missing values, and original \code{NA}s can be restored after filtering.
+Wrapper around \code{outlier_pca_lof()} with conveniences:
+\itemize{
+\item Select a subset of columns (\code{target_cols})
+\item Exclude QC rows from outlier detection
+\item Temporarily impute missing values (half of min) for detection
+\item \strong{New:} apply detection independently within strata (\code{strata})
+}
+
+Wrapper around \code{outlier_pca_lof()} with conveniences:
+\itemize{
+\item Select a subset of columns (\code{target_cols})
+\item Exclude QC rows from outlier detection
+\item Temporarily impute missing values (half of min) for detection
+\item \strong{New:} apply detection independently within strata (\code{strata})
+}
 }
 \examples{
-\dontrun{
-result <- remove_outliers(
-    df = my_data,
-    target_cols = "^metab_",
-    is_qc = my_data$SampleType == "QC",
-    method = "pca-lof-overall",
-    impute_method = "half-min-value"
-)
+# No stratification (current behavior)
+# remove_outliers(df, target_cols = c("f1","f2"))
 
-head(result$df_filtered)
-print(result$plot_samples_outlier)
-result$excluded_ids
-}
+# Stratify by a column
+# remove_outliers(df, target_cols = c("f1","f2"), strata = "batch")
+
+# Stratify by an external vector
+# grp <- ifelse(df$batch \%in\% c("A","B"), "AB", "C")
+# remove_outliers(df, target_cols = c("f1","f2"), strata = grp)
+
+# No stratification (current behavior)
+# remove_outliers(df, target_cols = c("f1","f2"))
+
+# Stratify by a column
+# remove_outliers(df, target_cols = c("f1","f2"), strata = "batch")
+
+# Stratify by an external vector
+# grp <- ifelse(df$batch \%in\% c("A","B"), "AB", "C")
+# remove_outliers(df, target_cols = c("f1","f2"), strata = grp)
+
 }
