@@ -99,7 +99,7 @@ test_that("remove_outliers works without is_qc argument", {
   data <- generate_test_df(n = 40, na_frac = 0.2)
   df <- data$df
   df[5, ] <- 4
-  
+
 
   result <- remove_outliers(
     df = df,
@@ -136,7 +136,7 @@ test_that("remove_outliers restores missing values if requested", {
   df <- data$df
   df[5, "A"] <- NA
   df[3, "B"] <- NA
-  
+
   result <- remove_outliers(
     df = df,
     target_cols = c("A", "B"),
@@ -147,7 +147,6 @@ test_that("remove_outliers restores missing values if requested", {
 
   expect_true(is.na(result$df_filtered$A[5]))
   expect_true(is.na(result$df_filtered$B[3]))
-  
 })
 
 test_that("remove_outliers restores missing values if requested + NAs in qc", {
@@ -159,7 +158,7 @@ test_that("remove_outliers restores missing values if requested + NAs in qc", {
 
   is_qc <- rep(FALSE, nrow(df))
   is_qc[35:40] <- TRUE
-  
+
   result <- remove_outliers(
     df = df,
     target_cols = c("A", "B"),
@@ -172,7 +171,6 @@ test_that("remove_outliers restores missing values if requested + NAs in qc", {
   expect_true(is.na(result$df_filtered$A[5]))
   expect_true(is.na(result$df_filtered$B[3]))
   expect_true(is.na(result$df_filtered$B[37]))
-  
 })
 
 test_that("remove_outliers throws error on invalid column", {
@@ -198,7 +196,7 @@ test_that("remove_outliers throws error if is_qc length is invalid", {
 test_that("remove_outliers preserves original row order", {
   data <- generate_test_df()
   df <- data$df
-  
+
   rownames(df) <- paste0("id_", seq_len(nrow(df)))
 
   result <- remove_outliers(
@@ -210,4 +208,107 @@ test_that("remove_outliers preserves original row order", {
   )
 
   expect_equal(rownames(result$df_filtered), rownames(df))
+})
+
+
+test_that("No stratification behaves like original", {
+  set.seed(1)
+  min_row_per_strata <- 40
+  df <- data.frame(
+    a = rnorm(min_row_per_strata),
+    b = rnorm(min_row_per_strata),
+    c = rnorm(min_row_per_strata),
+    row.names = paste0("s", 1:min_row_per_strata)
+  )
+  res <- remove_outliers(
+    df,
+    target_cols = c("a", "b"),
+    is_qc = rep(FALSE, nrow(df)),
+    strata = NULL,
+    impute_method = NULL,
+    return_ggplots = FALSE
+  )
+  expect_true(is.list(res))
+  expect_true(all(c("df_filtered", "excluded_ids") %in% names(res)))
+  expect_true(nrow(res$df_filtered) <= nrow(df))
+})
+
+test_that("Stratification by column works and merges results", {
+  set.seed(1)
+  min_row_per_strata <- 40
+  n_strata <- 3
+  n_row <- min_row_per_strata * n_strata
+  df <- data.frame(
+    a = rnorm(n_row),
+    b = rnorm(n_row),
+    batch = rep(c("X", "Y", "Z"), each = min_row_per_strata),
+    row.names = paste0("s", 1:n_row)
+  )
+  # mark a couple as QC (1 per batch)
+  is_qc <- rep(FALSE, n_row)
+  is_qc[c(1, 11, 21)] <- TRUE
+
+  res <- remove_outliers(
+    df,
+    target_cols = c("a", "b"),
+    is_qc = is_qc,
+    strata = "batch",
+    impute_method = "half-min-value",
+    return_ggplots = FALSE
+  )
+
+  # QC should never be excluded
+  expect_false(any(rownames(df)[is_qc] %in% res$excluded_ids))
+  # Filtered df should still contain all QC rows
+  expect_true(all(rownames(df)[is_qc] %in% rownames(res$df_filtered)))
+})
+
+test_that("Stratification by external vector works", {
+  set.seed(1)
+  min_row_per_strata <- 40
+  n_strata <- 3
+  n_row <- min_row_per_strata * n_strata
+  df <- data.frame(
+    a = rnorm(n_row),
+    b = rnorm(n_row),
+    row.names = paste0("s", 1:n_row)
+  )
+  grp <- rep(c("G1","G2","G3"), times = c(min_row_per_strata, min_row_per_strata, min_row_per_strata))
+  res <- remove_outliers(
+    df,
+    target_cols = c("a","b"),
+    strata = grp,
+    impute_method = NULL,
+    return_ggplots = FALSE
+  )
+  expect_type(res$excluded_ids, "character")
+  expect_true(nrow(res$df_filtered) <= nrow(df))
+})
+
+test_that("Non-target columns and NA restoration are handled consistently", {
+  set.seed(1)
+  min_row_per_strata <- 40
+  n_strata <- 1
+  n_row <- min_row_per_strata * n_strata
+  df <- data.frame(
+    a = c(rnorm(10), NA, rnorm(n_row-11)),  # include some NA
+    b = rnorm(n_row),
+    meta = letters[1:n_row],
+    row.names = paste0("s", 1:n_row)
+  )
+  res <- remove_outliers(
+    df,
+    target_cols = c("a"),
+    strata = NULL,
+    impute_method = "half-min-value",
+    restore_missing_values = TRUE
+  )
+  # meta should be preserved for retained rows
+  expect_true("meta" %in% colnames(res$df_filtered))
+  # NA restoration: any row kept should have original NA if it was NA pre-imputation
+  kept <- rownames(res$df_filtered)
+  expect_identical(
+    is.na(res$df_filtered[kept, "a"]),
+    is.na(df[kept, "a"])
+  )
 })

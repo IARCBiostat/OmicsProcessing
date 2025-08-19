@@ -23,9 +23,17 @@ resolve_target_cols <- function(df, target_cols) {
     return(names(df))
   }
 
+  colnames <- names(df)
+
   if (length(target_cols) == 1) {
-    # Treat as regex pattern
-    matched <- grep(target_cols, names(df), value = TRUE)
+    # Exact name(s) take precedence; preserve duplicates
+    exact_count <- sum(colnames == target_cols)
+    if (exact_count > 0) {
+      return(rep(target_cols, exact_count))
+    }
+
+    # Otherwise treat as regex
+    matched <- grep(target_cols, colnames, value = TRUE)
     if (length(matched) == 0) {
       stop("No columns matched the regular expression in `target_cols`.")
     }
@@ -33,7 +41,7 @@ resolve_target_cols <- function(df, target_cols) {
   }
 
   # Treat as explicit column names
-  missing_cols <- setdiff(target_cols, names(df))
+  missing_cols <- setdiff(target_cols, colnames)
   if (length(missing_cols) > 0) {
     stop("The following `target_cols` are not in the dataframe: ",
          paste(missing_cols, collapse = ", "))
