@@ -65,11 +65,11 @@ final_cols <- function(target_cols_kept, non_target_cols, all_names) {
 #' @param col_thresh Proportion of missing values allowed per column in target columns.
 #' @param target_cols Character vector of target columns. If NULL, resolved by `resolve_target_cols()`.
 #' @param is_qc Logical vector the same length as `nrow(df)` indicating QC rows (always retained).
-#' @param filter_order One of `"simultaneous"`, `"col_then_row"`, `"row_then_col"`, or `"iterative"`.
-#'   * `"simultaneous"`: filter rows and columns independently, then intersect results.
+#' @param filter_order One of `"iterative"` (default), `"col_then_row"`, `"row_then_col"`, or `"simultaneous"`.
+#'   * `"iterative"`: alternately filter rows and columns until stable or `max_iter` is reached.
 #'   * `"col_then_row"`: filter columns first, then rows.
 #'   * `"row_then_col"`: filter rows first, then columns.
-#'   * `"iterative"`: alternately filter rows and columns until stable or `max_iter` is reached.
+#'   * `"simultaneous"`: filter rows and columns independently, then intersect results.
 #' @param max_iter Maximum number of iterations when `filter_order="iterative"`. Default 10.
 #'
 #' @return Filtered data.frame with a subset of rows and/or columns.
@@ -145,7 +145,7 @@ filter_by_missingness <- function(df,
                                   col_thresh = 0.5,
                                   target_cols = NULL,
                                   is_qc = NULL,
-                                  filter_order = c("simultaneous", "col_then_row", "row_then_col", "iterative"),
+                                  filter_order = c("iterative", "simultaneous", "col_then_row", "row_then_col"),
                                   max_iter = 10) {
   filter_order <- match.arg(filter_order)
 
