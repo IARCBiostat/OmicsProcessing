@@ -10,7 +10,7 @@ filter_by_missingness(
   col_thresh = 0.5,
   target_cols = NULL,
   is_qc = NULL,
-  filter_order = c("simultaneous", "col_then_row", "row_then_col", "iterative"),
+  filter_order = c("iterative", "simultaneous", "col_then_row", "row_then_col"),
   max_iter = 10
 )
 }
@@ -25,12 +25,12 @@ filter_by_missingness(
 
 \item{is_qc}{Logical vector the same length as \code{nrow(df)} indicating QC rows (always retained).}
 
-\item{filter_order}{One of \code{"simultaneous"}, \code{"col_then_row"}, \code{"row_then_col"}, or \code{"iterative"}.
+\item{filter_order}{One of \code{"iterative"} (default), \code{"col_then_row"}, \code{"row_then_col"}, or \code{"simultaneous"}.
 \itemize{
-\item \code{"simultaneous"}: filter rows and columns independently, then intersect results.
+\item \code{"iterative"}: alternately filter rows and columns until stable or \code{max_iter} is reached.
 \item \code{"col_then_row"}: filter columns first, then rows.
 \item \code{"row_then_col"}: filter rows first, then columns.
-\item \code{"iterative"}: alternately filter rows and columns until stable or \code{max_iter} is reached.
+\item \code{"simultaneous"}: filter rows and columns independently, then intersect results.
 }}
 
 \item{max_iter}{Maximum number of iterations when \code{filter_order="iterative"}. Default 10.}
