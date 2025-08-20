@@ -12,6 +12,21 @@ Use the main `process_data()` function to run your data through a sequential, cu
 
 Build your own custom pipeline by combining individual functions. This provides maximum control over every processing step. [Jump to the Modular Workflow Guide](#modular-workflow)
 
+### 3. Developer Guidelines
+
+For contributors to the project, we maintain clear expectations on **coding style**, **documentation**, and **unit tests**. [Jump to Developer Guidelines](#developers--contributors)
+
+### 4. Unit Testing Guidelines
+
+All functionality is safeguarded by **unit tests** written using `testthat`.
+We provide:
+
+* Guidance on writing high-quality UTs.
+* Best practices for naming and organizing tests.
+* Instructions for running UTs locally.
+
+[Jump to Unit Testing Guidelines](#unit-testing-guidelines)
+
 ---
 
 ## The `process_data()` documentation
@@ -217,11 +232,73 @@ filtered_df <- OmicsProcession::filter_by_missingness(
   row_thresh = 0.5,  # Remove features with >50% missingness
   col_thresh = 0.5,  # Remove samples with >50% missingness
   target_cols = "@",  # Automatically detect feature columns
-  is_qc = grepl("^sQC", df$sample_type)  # Identify QC samples
+  is_qc = grepl("^sQC", df$sample_type),  # Identify QC samples
+  filter_order = "iterative"  # Default: iterative filtering
 )
 ```
 
-This step removes features and/or samples with a high proportion of missing values. You can customise thresholds and specify which samples are Quality Control (QC). See `?OmicsProcession::filter_by_missingness`. You can either pass a regular expression for automatic feature column detection (for example with `target_cols = "@"` the function will classify all columns that have the `@` as a feature column).
+This step removes features and/or samples with a high proportion of missing values. You can customise thresholds and specify which samples are Quality Control (QC). **QC rows are always retained in the returned dataset, but they are excluded when calculating the missingness proportions.** You can either pass a regular expression for automatic feature column detection (for example with `target_cols = "@"` the function will classify all columns that have the `@` as a feature column).
+
+---
+
+#### Filtering order (`filter_order`)
+
+The parameter `filter_order` controls the sequence in which row and column filtering is applied:
+
+* **`"iterative"` (default):** Alternates between row and column filtering until results stop changing (or `max_iter` is reached). Ensures that both row and column thresholds are satisfied simultaneously.
+* **`"col_then_row"`:** Removes columns first, then filters rows.
+* **`"row_then_col"`:** Removes rows first, then filters columns.
+* **`"simultaneous"`:** Determines rows and columns to keep independently, then intersects the results.
+
+The `"iterative"` option is generally more conservative: it repeatedly refines the dataset until both row and column criteria are satisfied, which can produce different results compared to the one-pass methods.
+
+---
+
+#### Example
+
+For the dataset below (rows 2 and 5 are marked as QC):
+
+```r
+df <- data.frame(
+  a = c(NA, 1, NA, 1, NA),
+  b = c(NA, NA, 2, 2, NA),
+  c = c(3, NA, NA, 3, NA),
+  d = 1
+)
+is_qc <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+target_cols <- c("a","b","c")
+
+df
+#    a  b  c d
+# 1 NA NA  3 1
+# 2  1 NA NA 1   <- QC
+# 3 NA  2 NA 1
+# 4  1  2  3 1
+# 5 NA NA NA 1   <- QC
+```
+
+Different `filter_order` choices yield different results:
+
+```r
+# Iterative (default)
+filter_by_missingness(df, 0.5, 0.5, target_cols, is_qc, filter_order = "iterative")
+#    b  c d
+# 1 NA  3 1
+# 2 NA NA 1
+# 3  2 NA 1
+# 4  2  3 1
+# 5 NA NA 1
+
+# Simultaneous
+filter_by_missingness(df, 0.5, 0.5, target_cols, is_qc, filter_order = "simultaneous")
+#    b  c d
+# 2 NA NA 1
+# 4  2  3 1
+# 5 NA NA 1
+```
+
+Notice how **row 1 is retained in the iterative case but dropped in the simultaneous case**, because the iterative procedure keeps alternating until both row and column criteria are satisfied together.
+
 
 ---
 
@@ -240,7 +317,73 @@ outlier_results <- OmicsProcession::remove_outliers(
 clean_df <- outlier_results$df_filtered
 ```
 
-This function detects and removes outliers from the dataset using a PCA + Local Outlier Factor (LOF) method. Outliers are identified only among non-QC samples. Missing values can be imputed temporarily for outlier detection, and original NAs can be restored afterward. A PCA plot is returned if `return_ggplots = TRUE`. See `?remove_outliers`.
+This function detects and removes outliers from the dataset using a PCA + Local Outlier Factor (LOF) workflow. Outliers are identified only among non-QC samples. Missing values can be imputed temporarily for detection, and original `NA`s can be restored afterward. If `return_ggplots = TRUE`, PCA plots are returned (see notes below). See `?remove_outliers`.
+
+#### Optional: stratified outlier detection (`strata`)
+
+By default, **no stratification** is used (all non-QC samples are assessed together). You can optionally provide a **stratification variable** so that outlier detection runs **independently within each stratum**, and results are then merged:
+
+* Supply `strata` as either:
+
+  * the **name of a column** in `df`, or
+  * an **external vector** of length `nrow(df)` (e.g., a custom grouping).
+* Within each stratum:
+
+  * QC rows are **excluded** from detection (but always kept in the final output).
+  * If `impute_method = "half-min-value"`, imputation is performed **within that stratum** on `target_cols`.
+  * PCA → LOF → Tukey thresholding are applied to identify outliers.
+* The function returns the union of outlier sample IDs across strata and removes only those from the non-QC portion before recombining with QC rows.
+* When `return_ggplots = TRUE`, you’ll get a **named list of per-stratum plots** in `outlier_results$plot_samples_outlier`.
+
+**Examples**
+
+```r
+## 1) No stratification (default)
+res <- OmicsProcession::remove_outliers(
+  df, 
+  target_cols = c("f1","f2","f3"),
+  is_qc = df$sample_type == "sQC"
+)
+
+## 2) Stratify by a column (e.g., batch)
+res_batch <- OmicsProcession::remove_outliers(
+  df, 
+  target_cols = c("f1","f2","f3"),
+  is_qc = df$sample_type == "sQC",
+  strata = "batch",
+  return_ggplots = TRUE
+)
+
+## 3) Stratify by an external vector
+grp <- ifelse(df$center %in% c("C1","C2"), "C12", "C3")
+res_grp <- OmicsProcession::remove_outliers(
+  df, 
+  target_cols = tidyselect::starts_with("feat_"),
+  is_qc = df$sample_type == "sQC",
+  strata = grp,
+  restore_missing_values = TRUE
+)
+```
+
+#### Implementation notes & requirements
+
+* **PCA:** implemented via `stats::prcomp()`.
+* **LOF distances:** computed with `bigutilsr::LOF()`.
+* **Outlier thresholding:** via `bigutilsr::tukey_mc_up()`.
+
+Practical constraints:
+
+* You must have **enough non-QC samples per stratum** for PCA and LOF to be meaningful. Very small strata (e.g., < \~8–10 samples) may yield unstable or invalid LOF results.
+* Features in `target_cols` should be **numeric**, with **no infinite values**; missing values are handled by the optional imputation step but **constant/zero-variance features** can break PCA.
+* LOF requires a number of neighbors (`K`); if a stratum has too few samples relative to `K`, `LOF()` may error or degenerate. As a rule of thumb, ensure **`n_samples_stratum >> K`**.
+* Very high **p/n ratios** (many more features than samples) can make PCA and LOF unstable. Consider filtering features before running this step.
+* **ggplot generation requires at least 10 feature columns** in `target_cols`. If fewer than 10 are provided, plots cannot be generated; in such cases you should leave `return_ggplots = FALSE` (the default).
+
+**Returned values**
+
+* `df_filtered`: input `df` with detected outlier **non-QC** rows removed (QC rows always retained).
+* `excluded_ids`: vector of removed row names (union across strata).
+* `plot_samples_outlier`: `NULL` or a **named list of ggplot objects** (one per stratum) when `return_ggplots = TRUE` *and* `length(target_cols) >= 10`.
 
 ---
 
@@ -337,3 +480,187 @@ out_serrf <- OmicsProcession::normalise_SERRF_by_batch(
 ```
 
 This step performs normalisation across batches using the SERRF method. It models unwanted technical variation using QC samples within each batch. Feature columns can be specified via name or regex. See `?OmicsProcession::normalise_SERRF_by_batch`.
+
+## Developers & Contributors
+
+We welcome contributions to **OmicsProcessing**!
+Our highest priority is **clean code** and **good documentation** — with emphasis on *good*.
+
+### How to Contribute
+
+* Fork the repository.
+* Create a new **issue** describing your objective or planned change.
+* Develop your changes on a **separate branch**.
+* Once finished, open a **pull request** for review.
+
+All pull requests must pass **unit tests (UTs)** and include clear documentation.
+
+---
+
+### Coding Style Guidelines
+
+* **Modular design** is preferred: each task should be factored into its own function.
+* **Naming conventions**: all variable and function names must be lowercase, separated by underscores (`snake_case`), and be meaningfully descriptive.
+* **Function documentation**: every function must have complete **roxygen2** documentation, including at least one example.
+* **LLM-assisted cleanup**: we strongly recommend using LLMs to improve code clarity, formatting, and variable naming suggestions.
+
+#### Example function with roxygen2 documentation
+
+```r
+#' Add Two Numbers
+#'
+#' This function takes two numeric values and returns their sum.
+#'
+#' @param x A numeric value.
+#' @param y A numeric value.
+#'
+#' @return A numeric value representing the sum of `x` and `y`.
+#' @export
+#'
+#' @examples
+#' add_two_numbers(1, 2)
+#' add_two_numbers(-5, 10)
+add_two_numbers <- function(x, y) {
+  x + y
+}
+```
+
+**Note on `@export`**
+Functions marked with `@export` are made available to end users of the package. Functions without `@export` remain internal helpers: they can still be tested and documented, but they are not part of the public API.
+
+---
+
+### Unit Tests (UTs)
+
+Every function must have accompanying **unit tests**. Unit tests check function behavior and serve as guidance for future developers when modifications are required.
+
+#### Example unit test
+
+```r
+test_that("add_two_numbers works as expected", {
+  expect_equal(add_two_numbers(1, 2), 3)
+  expect_equal(add_two_numbers(-5, 10), 5)
+  expect_true(is.numeric(add_two_numbers(2, 2)))
+})
+```
+
+---
+
+
+### Writing Good UTs (mini‑guide)
+
+Good tests verify **behavior** (public API contracts), not implementation details. Aim for small, fast, and deterministic tests.
+
+**What to cover**
+
+* **Happy path:** the typical, correct usage.
+* **Edge cases:** empty inputs, single row/column, NA/NaN/Inf, duplicated IDs, extreme values.
+* **Bad inputs:** wrong types/shapes; assert errors with informative messages.
+* **Boundaries:** off‑by‑one, min/max thresholds, zero/negative values.
+* **Stochastic steps:** set seeds for reproducibility.
+
+**Expectations to prefer**
+
+* Exact equality: `expect_identical()` (strictest).
+* Numeric comparisons: `expect_equal(..., tolerance = 1e-8)` (floating point).
+* Types/classes: `expect_s3_class(obj, "data.frame")`.
+* Names/columns: `expect_named(df, c("sample_id","metabolite","intensity"))`.
+* Logical properties: `expect_true(all(df$intensity >= 0))`.
+
+**Errors, warnings, messages**
+
+```r
+expect_error(fn(bad_arg), class = "my_pkg_error")     # test classed errors
+expect_warning(fn(x), "deprecated")                   # or a pattern
+expect_message(fn(verbose = TRUE), "Completed step")
+```
+
+**Data‑frame outputs**
+Check structure over exact values when appropriate:
+
+```r
+out <- normalize_intensity(df, method = "median")
+expect_s3_class(out, "data.frame")
+expect_true(all(c("sample_id","metabolite","intensity_norm") %in% names(out)))
+expect_equal(nrow(out), nrow(df))
+```
+
+**Fixtures & temporary files**
+
+* Put tiny example inputs under `tests/testthat/fixtures/` (or `inst/extdata/` for examples).
+* Use `withr::local_tempdir()` / `local_tempfile()` to avoid polluting the repo.
+* Load fixture paths via `testthat::test_path("fixtures", "tiny_input.csv")`.
+
+---
+
+### Tests Directory Structure & Naming
+
+**Recommended layout**
+
+```
+OmicsProcessing/
+├─ R/
+├─ tests/
+│  ├─ testthat.R
+│  └─ testthat/
+│     ├─ test-process_data.R
+│     ├─ test-normalize_intensity.R
+│     ├─ test-impute_values.R
+│     ├─ helper-setup.R
+│     └─ fixtures/
+│        ├─ tiny_input.csv
+│        └─ tiny_metadata.csv
+└─ ...
+```
+
+**Files**
+
+* `tests/testthat.R` (boilerplate):
+
+  ```r
+  library(testthat)
+  library(OmicsProcessing)
+  test_check("OmicsProcessing")
+  ```
+* **Unit test files** live in `tests/testthat/` and must start with `test-*.R`.
+
+  * One file per exported function or cohesive feature:
+
+    * `test-normalize_intensity.R`
+    * `test-impute_values.R`
+    * `test-integration-process_data.R` (for end‑to‑end/integration)
+* **Fixtures** (tiny static inputs) go under `tests/testthat/fixtures/`.
+
+**Naming conventions**
+
+* **Files:** `test-<function_or_feature>.R`
+* **Tests:** use clear, behavior‑oriented descriptions:
+
+  ```r
+  test_that("normalize_intensity rescales to median = 1 per sample", { ... })
+  test_that("process_data() errors on missing required columns", { ... })
+  ```
+
+---
+
+### Running Unit Tests
+
+**Everything**
+
+```r
+devtools::test()
+```
+
+**Filter by file or name**
+
+```r
+devtools::test(filter = "normalize_intensity") # matches file or test name
+testthat::test_file("tests/testthat/test-impute_values.R")
+```
+
+**Coverage (optional but encouraged)**
+
+```r
+# in the package root
+covr::report()   # opens HTML coverage report
+```
