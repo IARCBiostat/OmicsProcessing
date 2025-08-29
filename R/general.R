@@ -12,6 +12,7 @@
 #' @param target_cols A character vector of column names or a single regular expression string.
 #'
 #' @return A character vector of resolved column names present in `df`.
+#' @export
 #'
 #' @examples
 #' df <- data.frame(a = 1, b = 2, c_score = 3)
