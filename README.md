@@ -220,14 +220,14 @@ The processed data, the IDs for excluded samples and features and the reasons fo
 
 ## Modular Workflow
 
-The following example illustrates a custom pipeline using individual functions from the package. Each section is accompanied by an explanation and guidance. For detailed parameter descriptions, please refer to the function documentation (e.g., `?OmicsProcession::filter_by_missingness`).
+The following example illustrates a custom pipeline using individual functions from the package. Each section is accompanied by an explanation and guidance. For detailed parameter descriptions, please refer to the function documentation (e.g., `?OmicsProcessing::filter_by_missingness`).
 
 This modular approach is particularly useful for users who need detailed control over processing steps or want to adapt parts of the pipeline to specific datasets or experimental designs.
 
 ### Step 1: Filter by missingness
 
 ```r
-filtered_df <- OmicsProcession::filter_by_missingness(
+filtered_df <- OmicsProcessing::filter_by_missingness(
   df,
   row_thresh = 0.5,  # Remove features with >50% missingness
   col_thresh = 0.5,  # Remove samples with >50% missingness
@@ -305,7 +305,7 @@ Notice how **row 1 is retained in the iterative case but dropped in the simultan
 ### Step 2: Outlier removal using PCA + LOF
 
 ```r
-outlier_results <- OmicsProcession::remove_outliers(
+outlier_results <- OmicsProcessing::remove_outliers(
   filtered_df,
   target_cols = "@",
   is_qc = grepl("^sQC", filtered_df$sample_type),
@@ -339,14 +339,14 @@ By default, **no stratification** is used (all non-QC samples are assessed toget
 
 ```r
 ## 1) No stratification (default)
-res <- OmicsProcession::remove_outliers(
+res <- OmicsProcessing::remove_outliers(
   df, 
   target_cols = c("f1","f2","f3"),
   is_qc = df$sample_type == "sQC"
 )
 
 ## 2) Stratify by a column (e.g., batch)
-res_batch <- OmicsProcession::remove_outliers(
+res_batch <- OmicsProcessing::remove_outliers(
   df, 
   target_cols = c("f1","f2","f3"),
   is_qc = df$sample_type == "sQC",
@@ -356,7 +356,7 @@ res_batch <- OmicsProcession::remove_outliers(
 
 ## 3) Stratify by an external vector
 grp <- ifelse(df$center %in% c("C1","C2"), "C12", "C3")
-res_grp <- OmicsProcession::remove_outliers(
+res_grp <- OmicsProcessing::remove_outliers(
   df, 
   target_cols = tidyselect::starts_with("feat_"),
   is_qc = df$sample_type == "sQC",
@@ -390,7 +390,7 @@ Practical constraints:
 ### Step 3: Log transformation
 
 ```r
-feature_cols <- OmicsProcession::resolve_target_cols(clean_df, "@")
+feature_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
 log_transformed_df <- clean_df %>%
   dplyr::mutate(dplyr::across(
     .cols = tidyselect::all_of(feature_cols),
@@ -399,14 +399,14 @@ log_transformed_df <- clean_df %>%
   ))
 ```
 
-Applies a log(1 + x) transformation to all identified feature columns. This reduces skewness and helps stabilize variance. Use `OmicsProcession::resolve_target_cols()` to specify features via name or regex. See `?resolve_target_cols`.
+Applies a log(1 + x) transformation to all identified feature columns. This reduces skewness and helps stabilize variance. Use `OmicsProcessing::resolve_target_cols()` to specify features via name or regex. See `?resolve_target_cols`.
 
 ---
 
 ### Step 4: Hybrid Imputation (Random Forest + LCMD)
 
 ```r
-imputed_results <- OmicsProcession::hybrid_imputation(
+imputed_results <- OmicsProcessing::hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
   method = c("RF-LCMD"),
@@ -424,9 +424,9 @@ The function automatically decides, per feature, which method to use based on th
 
 You can inspect the imputed results (`$hybrid_rf_lcmd`), the individual method outputs (`$rf`, `$lcmd`), and the OOBE values (`$oob`).
 
-See `?OmicsProcession::hybrid_imputation` for details.
+See `?OmicsProcessing::hybrid_imputation` for details.
 
-The behavior of the imputation methods used in `OmicsProcession::hybrid_imputation()` can be fine-tuned using control lists.
+The behavior of the imputation methods used in `OmicsProcessing::hybrid_imputation()` can be fine-tuned using control lists.
 
 To customize `missForest::missForest()`:
 
@@ -454,7 +454,7 @@ my_control_LCMD <- list(
 These can then be passed to the imputation call as:
 
 ```r
-df_rf_lcmd_hybrid <- OmicsProcession::hybrid_imputation(
+df_rf_lcmd_hybrid <- OmicsProcessing::hybrid_imputation(
   ...,
   control_LCMD = my_control_LCMD,
   control_RF = my_control_RF
@@ -471,7 +471,7 @@ This allows full control over the imputation process, useful when dealing with c
 imputed_df <- imputed_df %>%
   dplyr::mutate(batch = factor(batch))
 
-out_serrf <- OmicsProcession::normalise_SERRF_by_batch(
+out_serrf <- OmicsProcessing::normalise_SERRF_by_batch(
   imputed_df,
   target_cols = "@",
   is_qc = grepl("^sQC", imputed_df$sample_type),
@@ -479,7 +479,7 @@ out_serrf <- OmicsProcession::normalise_SERRF_by_batch(
 )
 ```
 
-This step performs normalisation across batches using the SERRF method. It models unwanted technical variation using QC samples within each batch. Feature columns can be specified via name or regex. See `?OmicsProcession::normalise_SERRF_by_batch`.
+This step performs normalisation across batches using the SERRF method. It models unwanted technical variation using QC samples within each batch. Feature columns can be specified via name or regex. See `?OmicsProcessing::normalise_SERRF_by_batch`.
 
 ## Developers & Contributors
 
