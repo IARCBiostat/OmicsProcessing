@@ -25,6 +25,7 @@
 #'   \item{plot_samples_outlier}{If `return_ggplots = TRUE`, a named list of ggplot objects per stratum; otherwise `NULL`.}
 #' }
 #'
+#' @export
 #' @examples
 #' # No stratification (current behavior)
 #' # remove_outliers(df, target_cols = c("f1","f2"))
