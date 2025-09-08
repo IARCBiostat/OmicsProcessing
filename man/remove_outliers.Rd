@@ -14,17 +14,6 @@ remove_outliers(
   return_ggplots = FALSE,
   strata = NULL
 )
-
-remove_outliers(
-  df,
-  target_cols = NULL,
-  is_qc = NULL,
-  method = c("pca-lof-overall"),
-  impute_method = c(NULL, "half-min-value"),
-  restore_missing_values = TRUE,
-  return_ggplots = FALSE,
-  strata = NULL
-)
 }
 \arguments{
 \item{df}{A data.frame with features in columns and samples in rows.}
@@ -52,13 +41,6 @@ A list with:
 \item{excluded_ids}{Character vector of row names removed (union across strata).}
 \item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of ggplot objects per stratum; otherwise \code{NULL}.}
 }
-
-A list with:
-\describe{
-\item{df_filtered}{\code{df} with detected outlier rows removed (QC rows always retained).}
-\item{excluded_ids}{Character vector of row names removed (union across strata).}
-\item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of ggplot objects per stratum; otherwise \code{NULL}.}
-}
 }
 \description{
 Wrapper around \code{outlier_pca_lof()} with conveniences:
@@ -68,26 +50,8 @@ Wrapper around \code{outlier_pca_lof()} with conveniences:
 \item Temporarily impute missing values (half of min) for detection
 \item \strong{New:} apply detection independently within strata (\code{strata})
 }
-
-Wrapper around \code{outlier_pca_lof()} with conveniences:
-\itemize{
-\item Select a subset of columns (\code{target_cols})
-\item Exclude QC rows from outlier detection
-\item Temporarily impute missing values (half of min) for detection
-\item \strong{New:} apply detection independently within strata (\code{strata})
-}
 }
 \examples{
-# No stratification (current behavior)
-# remove_outliers(df, target_cols = c("f1","f2"))
-
-# Stratify by a column
-# remove_outliers(df, target_cols = c("f1","f2"), strata = "batch")
-
-# Stratify by an external vector
-# grp <- ifelse(df$batch \%in\% c("A","B"), "AB", "C")
-# remove_outliers(df, target_cols = c("f1","f2"), strata = grp)
-
 # No stratification (current behavior)
 # remove_outliers(df, target_cols = c("f1","f2"))
 
