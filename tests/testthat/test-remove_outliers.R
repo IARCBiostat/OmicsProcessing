@@ -273,10 +273,10 @@ test_that("Stratification by external vector works", {
     b = rnorm(n_row),
     row.names = paste0("s", 1:n_row)
   )
-  grp <- rep(c("G1","G2","G3"), times = c(min_row_per_strata, min_row_per_strata, min_row_per_strata))
+  grp <- rep(c("G1", "G2", "G3"), times = c(min_row_per_strata, min_row_per_strata, min_row_per_strata))
   res <- remove_outliers(
     df,
-    target_cols = c("a","b"),
+    target_cols = c("a", "b"),
     strata = grp,
     impute_method = NULL,
     return_ggplots = FALSE
@@ -291,7 +291,7 @@ test_that("Non-target columns and NA restoration are handled consistently", {
   n_strata <- 1
   n_row <- min_row_per_strata * n_strata
   df <- data.frame(
-    a = c(rnorm(10), NA, rnorm(n_row-11)),  # include some NA
+    a = c(rnorm(10), NA, rnorm(n_row - 11)), # include some NA
     b = rnorm(n_row),
     meta = letters[1:n_row],
     row.names = paste0("s", 1:n_row)
@@ -311,4 +311,98 @@ test_that("Non-target columns and NA restoration are handled consistently", {
     is.na(res$df_filtered[kept, "a"]),
     is.na(df[kept, "a"])
   )
+})
+
+test_that("errors when imputation is off and missing present (lists cols + counts)", {
+  set.seed(1)
+  df <- data.frame(
+    a = c(1, 2, NA, 4, 5),
+    b = c(1, 2, 3, 4, 5)
+  )
+  rownames(df) <- paste0("s", seq_len(nrow(df)))
+
+  err_msg <- NULL
+  expect_error(
+    {
+      tryCatch(
+        remove_outliers(
+          df,
+          target_cols = c("a", "b"),
+          is_qc = rep(FALSE, nrow(df)),
+          impute_method = NULL
+        ),
+        error = function(e) {
+          err_msg <<- conditionMessage(e)
+          stop(e)
+        }
+      )
+    },
+    # Only require a stable substring; newlines won't break this
+    regexp = "Missing values detected in `target_cols` among non-QC rows"
+  )
+
+  # Now assert the detailed pieces on the captured message
+  expect_match(err_msg, "Columns with missing values \\[n_missing\\]:\\s*a \\(1\\)\\.")
+  expect_match(err_msg, 'impute_method = "half-min-value"')
+})
+
+test_that("global imputation kicks in when a stratum has all-NA column (warns with details)", {
+  set.seed(2)
+  df <- data.frame(
+    a = c(1, 2, 3, NA, NA, NA),
+    b = c(2, 3, 4, NA, NA, NA),
+    batch = c("A", "A", "A", "B", "B", "B")
+  )
+  rownames(df) <- paste0("s", seq_len(nrow(df)))
+  is_qc <- rep(FALSE, nrow(df))
+
+  warn_msg <- NULL
+  res <- withCallingHandlers(
+    {
+      remove_outliers(
+        df,
+        target_cols = c("a", "b"),
+        strata = "batch",
+        impute_method = "half-min-value",
+        is_qc = is_qc,
+        return_ggplots = FALSE
+      )
+    },
+    warning = function(w) {
+      warn_msg <<- conditionMessage(w)  # capture text
+      # DO NOT muffle — let it propagate so default behavior remains
+    }
+  )
+
+  # Assert that a warning occurred and contains the key parts
+  expect_false(is.null(warn_msg))
+  expect_match(warn_msg, "Applying temporary imputation on the whole non-QC dataset")
+  expect_match(warn_msg, "Affected strata and columns:")
+
+  # Light sanity checks on result
+  expect_named(res, c("df_filtered","plot_samples_outlier","excluded_ids"))
+  expect_true(is.character(res$excluded_ids))
+  expect_true(all(res$excluded_ids %in% rownames(df)))
+  expect_true(all(rownames(res$df_filtered) %in% rownames(df)))
+})
+
+
+test_that("per-stratum path runs without triggering global imputation", {
+  set.seed(3)
+  df <- data.frame(
+    a = c(1, NA, 3, 4, 5, 6),
+    b = c(2, 3, NA, 5, 6, 7),
+    batch = c("A", "A", "A", "B", "B", "B")
+  )
+  rownames(df) <- paste0("s", seq_len(nrow(df)))
+  is_qc <- rep(FALSE, nrow(df))
+
+  res <- remove_outliers(
+    df,
+    target_cols = c("a", "b"),
+    strata = "batch",
+    impute_method = "half-min-value",
+    is_qc = is_qc
+  )
+  expect_true(is.list(res))
 })

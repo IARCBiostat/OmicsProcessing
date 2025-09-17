@@ -18,21 +18,27 @@ remove_outliers(
 \arguments{
 \item{df}{A data.frame with features in columns and samples in rows.}
 
-\item{target_cols}{Character vector of column names (or tidyselect helpers if supported by \code{resolve_target_cols()}).
-If \code{NULL}, uses \code{resolve_target_cols(df, NULL)} to infer targets.}
+\item{target_cols}{Character vector of column names (or tidyselect helpers if supported by
+\code{resolve_target_cols()}). If \code{NULL}, uses \code{resolve_target_cols(df, NULL)} to infer targets.}
 
-\item{is_qc}{Logical vector (length \code{nrow(df)}) marking QC rows to exclude from detection. Defaults to all \code{FALSE}.}
+\item{is_qc}{Logical vector (length \code{nrow(df)}) marking QC rows to exclude from detection.
+Defaults to all \code{FALSE}.}
 
 \item{method}{Character; currently supports \code{"pca-lof-overall"} (default behavior).}
 
-\item{impute_method}{\code{NULL} or \code{"half-min-value"}. If set, imputation is applied \strong{within each stratum} on \code{target_cols}.}
+\item{impute_method}{\code{NULL} or \code{"half-min-value"}. When set, missing values in \code{target_cols}
+are imputed as half the minimum non-missing value—by default \strong{within each stratum}; if any
+#'   stratum has a target column entirely \code{NA}, imputation is performed \strong{globally} on non-QC rows
+(see Missing-data policy).}
 
-\item{restore_missing_values}{Logical; if \code{TRUE}, original \code{NA}s in \code{target_cols} are restored after filtering.}
+\item{restore_missing_values}{Logical; if \code{TRUE}, original \code{NA}s in \code{target_cols} are restored
+after filtering.}
 
 \item{return_ggplots}{Logical; if \code{TRUE}, returns a named list of ggplots per stratum.}
 
-\item{strata}{\code{NULL} (default), a single column name in \code{df}, or an external vector of length \code{nrow(df)}.
-When provided, outlier detection is run independently within each stratum (QC rows always excluded within the stratum).}
+\item{strata}{\code{NULL} (default), a single column name in \code{df}, or an external vector of length
+\code{nrow(df)}. When provided, outlier detection is run independently within each stratum
+(QC rows excluded within the stratum).}
 }
 \value{
 A list with:
@@ -47,19 +53,82 @@ Wrapper around \code{outlier_pca_lof()} with conveniences:
 \itemize{
 \item Select a subset of columns (\code{target_cols})
 \item Exclude QC rows from outlier detection
-\item Temporarily impute missing values (half of min) for detection
-\item \strong{New:} apply detection independently within strata (\code{strata})
+\item Temporarily impute missing values (half of column minimum) for detection
+\item Apply detection independently within user-defined strata (\code{strata})
+}
+}
+\details{
+\subsection{Stratification}{
+
+Set \code{strata} to:
+\itemize{
+\item \code{NULL} (default) to run detection once over all non-QC rows, or
+\item a single column name in \code{df}, or
+\item an external vector (length \code{nrow(df)}) to group samples.
+}
+
+Outlier detection is performed \strong{independently within each stratum} on non-QC rows
+(QC rows are always excluded from detection but retained in the output). Strata with
+fewer than 5 non-QC samples are skipped (no outliers removed for that stratum).
+}
+
+\subsection{Missing-data policy}{
+\itemize{
+\item If \code{impute_method = NULL} and any \code{target_cols} contain missing values among non-QC rows,
+the function \strong{errors} and lists the affected columns with counts. Enable
+\code{impute_method = "half-min-value"} or resolve missingness beforehand.
+\item If \code{impute_method = "half-min-value"}:
+\itemize{
+\item The function first checks for target columns that are \strong{entirely \code{NA} across all non-QC rows}.
+If any exist, it \strong{errors} (a half-minimum cannot be computed).
+\item It then checks, \strong{per stratum}, for target columns that are entirely \code{NA} \strong{within that stratum}.
+If any are found, a \strong{warning} is emitted listing the affected strata and columns, and
+\strong{temporary imputation is applied on the whole non-QC dataset (ignoring stratification)},
+while outlier detection still runs \strong{per stratum} as requested.
+}
+\item After outlier removal, if \code{restore_missing_values = TRUE}, the original \code{NA}s in \code{target_cols}
+are restored in the returned data.
+}
 }
 }
 \examples{
-# No stratification (current behavior)
-# remove_outliers(df, target_cols = c("f1","f2"))
+# 1) No stratification
+remove_outliers(
+  df,
+  target_cols = c("f1","f2"),
+  impute_method = "half-min-value"
+)
 
-# Stratify by a column
-# remove_outliers(df, target_cols = c("f1","f2"), strata = "batch")
+# 2) Stratify by a column in df
+remove_outliers(
+  df,
+  target_cols = c("f1","f2"),
+  strata = "batch",
+  impute_method = "half-min-value"
+)
 
-# Stratify by an external vector
-# grp <- ifelse(df$batch \%in\% c("A","B"), "AB", "C")
-# remove_outliers(df, target_cols = c("f1","f2"), strata = grp)
+# 3) Stratify by an external vector
+my_strata <- c("A", "A", "B", "B", "B", "C", "C")
+remove_outliers(
+  df,
+  target_cols = c("f1","f2"),
+  strata = grp,
+  impute_method = "half-min-value"
+)
 
+# 4) Stratum with all-NA target columns -> triggers global temporary imputation (warning)
+\donttest{
+df2 <- data.frame(
+  f1 = c(1, 2, 3, NA, NA, NA),
+  f2 = c(2, 3, 4, NA, NA, NA),
+  batch = c("A","A","A","B","B","B")
+)
+rownames(df2) <- paste0("s", seq_len(nrow(df2)))
+remove_outliers(
+  df2,
+  target_cols = c("f1","f2"),
+  strata = "batch",
+  impute_method = "half-min-value"
+)
+}
 }
