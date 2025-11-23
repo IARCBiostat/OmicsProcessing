@@ -5,7 +5,7 @@ Version: 1.0.0
 Date: 2025-03-03
 Authors@R: c(
     person("Vivian", "Viallon", role = c("aut")),
-    person("Lee", "Matthew", email = "matthewlee821@gmail.com", role = c("aut", "cre")),
+    person("Lee", "Matthew", email = "matthewlee821@gmail.com", role = c("aut")),
     person("Ali", "Farnudi", email = "farnudia@iarc.who.int", role = c("aut", "cre"))
     )
 Maintainer: Matthew Lee <matthewlee821@gmail.com>
@@ -45,5 +45,8 @@ Remotes:
 Depends: 
     R (>= 2.10)
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3

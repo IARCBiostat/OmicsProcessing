@@ -468,14 +468,11 @@ This allows full control over the imputation process, useful when dealing with c
 ### Step 5: Batch correction using SERRF
 
 ```r
-imputed_df <- imputed_df %>%
-  dplyr::mutate(batch = factor(batch))
-
 out_serrf <- OmicsProcessing::normalise_SERRF_by_batch(
   imputed_df,
   target_cols = "@",
   is_qc = grepl("^sQC", imputed_df$sample_type),
-  batch_col = "batch"
+  strata_col = "batch"
 )
 ```
 

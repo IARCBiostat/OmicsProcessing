@@ -5,21 +5,24 @@
 #' @param df A data frame or tibble.
 #' @param target_cols Feature columns to normalize (character vector or selector passed to `resolve_target_cols`).
 #' @param is_qc Logical vector indicating which rows are QC samples. Must be the same length as the number of rows in `df`.
-#' @param batch_col Name of the column containing batch IDs. Must exist in `df` and be a factor with no NA values.
+#' @param strata_col Name of the column containing batch/strata IDs. Must exist in `df` and be a factor with no NA values.
 #' @param num_screen_SERRF Number of correlated features to use in model fitting. Default is 10.
 #'
 #' @return A normalized data frame.
 #' @export
-normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, batch_col, num_screen_SERRF = 10) {
+normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, strata_col, num_screen_SERRF = 10) {
     # ---- Validation ----
-    if (missing(batch_col) || is.null(batch_col) || !nzchar(batch_col)) {
-        stop("You must provide the name of the batch column using the `batch_col` argument.")
+    if (missing(strata_col) || is.null(strata_col) || !nzchar(strata_col)) {
+        stop("You must provide the name of the batch/strata column using the `strata_col` argument.")
     }
-    if (!batch_col %in% colnames(df)) {
-        stop(paste0("Column '", batch_col, "' was not found in the input data frame."))
+    if (!strata_col %in% colnames(df)) {
+        stop(paste0("Column '", strata_col, "' was not found in the input data frame."))
     }
-    if (!is.factor(df[[batch_col]])) {
-        stop(paste0("The '", batch_col, "' column must be a factor. Please convert it using `as.factor()`."))
+
+    if (!is.factor(df[[strata_col]])) {
+        strata_col_factor <- paste0(strata_col, "_factor")
+        df[[strata_col_factor]] <- as.factor(df[[strata_col]])
+        strata_col <- strata_col_factor
     }
 
     target_cols <- resolve_target_cols(df, target_cols)
@@ -42,7 +45,7 @@ normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, batch
     }
 
     # ---- Initialization ----
-    batch_levels <- levels(df[[batch_col]])
+    batch_levels <- levels(df[[strata_col]])
     df[["__is_qc"]] <- is_qc
 
     qc_orig <- as.matrix(df[df[["__is_qc"]], target_cols, drop = FALSE])
@@ -54,7 +57,7 @@ normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, batch
 
     # ---- Precompute Correlations ----
     for (batch in batch_levels) {
-        batch_mask <- df[[batch_col]] == batch
+        batch_mask <- df[[strata_col]] == batch
         train <- df[batch_mask & df[["__is_qc"]], target_cols, drop = FALSE] |> as.matrix()
         target <- df[batch_mask & !df[["__is_qc"]], target_cols, drop = FALSE] |> as.matrix()
 
@@ -68,7 +71,7 @@ normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, batch
         feature_name <- target_cols[j]
 
         for (batch in batch_levels) {
-            batch_mask <- df[[batch_col]] == batch
+            batch_mask <- df[[strata_col]] == batch
             batch_data <- df[batch_mask, target_cols, drop = FALSE] |> as.matrix()
             train_data <- df[batch_mask & df[["__is_qc"]], target_cols, drop = FALSE]
             target_data <- df[batch_mask & !df[["__is_qc"]], target_cols, drop = FALSE]
