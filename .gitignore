@@ -52,7 +52,14 @@ __pycache__/
 # VS Code settings (if used)
 .vscode/
 
+# Vignettes and built docs
+inst/doc/
+vignettes/*.html
+vignettes/*.pdf
+
 # Mac and Linux system files
 Thumbs.db
 .svn/
 *.swp
+/doc/
+/Meta/
