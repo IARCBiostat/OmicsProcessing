@@ -1,125 +1,3 @@
-#' General hierarchical clustering
-#'
-#' Performs hierarchical clustering on a numeric vector, matrix or
-#' data.frame and returns cluster memberships. The clustering can be cut
-#' either at a given height or into a specified number of clusters.
-#'
-#' @param x Numeric vector, matrix or data.frame to cluster.
-#' @param height Numeric dendrogram height at which to cut. Exactly one
-#'   of `height` or `k` must be supplied.
-#' @param k Integer number of clusters to cut into. Exactly one of
-#'   `height` or `k` must be supplied.
-#' @param dist_method Character string specifying the distance measure
-#'   for [stats::dist()].
-#' @param hclust_method Character string specifying the linkage method
-#'   for [stats::hclust()].
-#'
-#' @return An integer vector giving cluster assignments.
-#'
-#' @examples
-#' # Vector input
-#' cluster_hierarchical(c(1, 1.1, 5, 5.2), height = 0.3)
-#'
-#' # Matrix input
-#' m <- cbind(
-#'   a = c(1, 1.1, 5, 5.2),
-#'   b = c(10, 11, 30, 31)
-#' )
-#' cluster_hierarchical(m, k = 2)
-#'
-#' @noRd
-cluster_hierarchical <- function(x,
-                                 height = NULL,
-                                 k = NULL,
-                                 dist_method = "euclidean",
-                                 hclust_method = "complete") {
-  if (is.null(height) && is.null(k)) {
-    stop("Supply exactly one of `height` or `k`.", call. = FALSE)
-  }
-  if (!is.null(height) && !is.null(k)) {
-    stop("Supply only one of `height` or `k`.", call. = FALSE)
-  }
-
-  x_mat <- as.matrix(x)
-
-  dist_obj <- stats::dist(x_mat, method = dist_method)
-  tree <- stats::hclust(dist_obj, method = hclust_method)
-
-  if (!is.null(height)) {
-    stats::cutree(tree, h = height)
-  } else {
-    stats::cutree(tree, k = k)
-  }
-}
-
-
-#' Parse mass/retention-time strings
-#'
-#' Extract mass and retention time (RT) values from strings of the form
-#' "mass@rt". Accepts a single string or a vector.
-#'
-#' @param x Character vector with entries like "123.4@56.7" or, when
-#'   \code{clean_rt_suffix = TRUE}, possibly "123.4@56.7:1".
-#' @param what Which values to return: "mass", "rt", or "both".
-#' @param clean_rt_suffix Logical. If TRUE, removes suffixes such as ":1" or ":2" from the RT part.
-#'
-#' @return Numeric vector (for "mass" or "rt") or a data.frame with two
-#'   columns (for "both").
-#'
-#' @examples
-#' parse_mass_rt("100.5@23.1", what = "mass")
-#' parse_mass_rt(c("10.2@1.5", "20.4@2.5"), what = "rt")
-#' parse_mass_rt("50@7.5", what = "both")
-#'
-#' parse_mass_rt("100.5@23.1:1",
-#'   what = "rt",
-#'   clean_rt_suffix = TRUE
-#' )
-#'
-#' @export
-parse_mass_rt <- function(x,
-                          what = c("mass", "rt", "both"),
-                          clean_rt_suffix = TRUE) {
-  what <- match.arg(what)
-
-  parts <- strsplit(x, "@", fixed = TRUE)
-
-  mass_chr <- vapply(parts, function(p) p[1], character(1))
-  rt_chr <- vapply(parts, function(p) {
-    if (length(p) < 2L) {
-      return(NA_character_)
-    }
-    p[2]
-  }, character(1))
-
-  if (clean_rt_suffix) {
-    has_suffix <- grepl(":", rt_chr, fixed = TRUE)
-    if (any(has_suffix, na.rm = TRUE)) {
-      pb <- rt_chr[has_suffix]
-      pb_split <- strsplit(pb, ":", fixed = TRUE)
-      pb_first <- vapply(
-        pb_split,
-        function(z) z[1],
-        character(1)
-      )
-      rt_chr[has_suffix] <- pb_first
-    }
-  }
-
-  masses <- as.numeric(mass_chr)
-  rts <- as.numeric(rt_chr)
-
-  if (what == "mass") {
-    return(masses)
-  }
-  if (what == "rt") {
-    return(rts)
-  }
-
-  return(data.frame(mass = masses, rt = rts))
-}
-
-
 #' Cluster features by retention time and summarise within clusters
 #'
 #' Groups features into clusters based on their retention time using
@@ -332,6 +210,130 @@ cluster_features_by_retention_time <- function(
 }
 
 
+#' General hierarchical clustering
+#'
+#' Performs hierarchical clustering on a numeric vector, matrix or
+#' data.frame and returns cluster memberships. The clustering can be cut
+#' either at a given height or into a specified number of clusters.
+#'
+#' @param x Numeric vector, matrix or data.frame to cluster.
+#' @param height Numeric dendrogram height at which to cut. Exactly one
+#'   of `height` or `k` must be supplied.
+#' @param k Integer number of clusters to cut into. Exactly one of
+#'   `height` or `k` must be supplied.
+#' @param dist_method Character string specifying the distance measure
+#'   for [stats::dist()].
+#' @param hclust_method Character string specifying the linkage method
+#'   for [stats::hclust()].
+#'
+#' @return An integer vector giving cluster assignments.
+#'
+#' @examples
+#' # Vector input
+#' cluster_hierarchical(c(1, 1.1, 5, 5.2), height = 0.3)
+#'
+#' # Matrix input
+#' m <- cbind(
+#'   a = c(1, 1.1, 5, 5.2),
+#'   b = c(10, 11, 30, 31)
+#' )
+#' cluster_hierarchical(m, k = 2)
+#'
+#' @noRd
+cluster_hierarchical <- function(x,
+                                 height = NULL,
+                                 k = NULL,
+                                 dist_method = "euclidean",
+                                 hclust_method = "complete") {
+  if (is.null(height) && is.null(k)) {
+    stop("Supply exactly one of `height` or `k`.", call. = FALSE)
+  }
+  if (!is.null(height) && !is.null(k)) {
+    stop("Supply only one of `height` or `k`.", call. = FALSE)
+  }
+
+  x_mat <- as.matrix(x)
+
+  dist_obj <- stats::dist(x_mat, method = dist_method)
+  tree <- stats::hclust(dist_obj, method = hclust_method)
+
+  if (!is.null(height)) {
+    return(stats::cutree(tree, h = height))
+  } else {
+    return(stats::cutree(tree, k = k))
+  }
+}
+
+
+#' Parse mass/retention-time strings
+#'
+#' Extract mass and retention time (RT) values from strings of the form
+#' "mass@rt". Accepts a single string or a vector.
+#'
+#' @param x Character vector with entries like "123.4@56.7" or, when
+#'   \code{clean_rt_suffix = TRUE}, possibly "123.4@56.7:1".
+#' @param what Which values to return: "mass", "rt", or "both".
+#' @param clean_rt_suffix Logical. If TRUE, removes suffixes such as ":1" or ":2" from the RT part.
+#'
+#' @return Numeric vector (for "mass" or "rt") or a data.frame with two
+#'   columns (for "both").
+#'
+#' @examples
+#' parse_mass_rt("100.5@23.1", what = "mass")
+#' parse_mass_rt(c("10.2@1.5", "20.4@2.5"), what = "rt")
+#' parse_mass_rt("50@7.5", what = "both")
+#'
+#' parse_mass_rt("100.5@23.1:1",
+#'   what = "rt",
+#'   clean_rt_suffix = TRUE
+#' )
+#'
+#' @export
+parse_mass_rt <- function(x,
+                          what = c("mass", "rt", "both"),
+                          clean_rt_suffix = TRUE) {
+  what <- match.arg(what)
+
+  parts <- strsplit(x, "@", fixed = TRUE)
+
+  mass_chr <- vapply(parts, function(p) p[1], character(1))
+  rt_chr <- vapply(parts, function(p) {
+    if (length(p) < 2L) {
+      return(NA_character_)
+    }
+    p[2]
+  }, character(1))
+
+  if (clean_rt_suffix) {
+    has_suffix <- grepl(":", rt_chr, fixed = TRUE)
+    if (any(has_suffix, na.rm = TRUE)) {
+      pb <- rt_chr[has_suffix]
+      pb_split <- strsplit(pb, ":", fixed = TRUE)
+      pb_first <- vapply(
+        pb_split,
+        function(z) z[1],
+        character(1)
+      )
+      rt_chr[has_suffix] <- pb_first
+    }
+  }
+
+  masses <- as.numeric(mass_chr)
+  rts <- as.numeric(rt_chr)
+
+  if (what == "mass") {
+    return(masses)
+  }
+  if (what == "rt") {
+    return(rts)
+  }
+
+  return(data.frame(mass = masses, rt = rts))
+}
+
+
+
+
 #' Select representative features per cluster based on scores
 #'
 #' For each cluster, this function selects a single representative feature.
@@ -430,10 +432,10 @@ get_features_representatives_based_on_scores <- function(
       cluster_scores <- scores[cluster]
       max_idx <- which.max(cluster_scores)
       rep_feature <- cluster[max_idx]
+      representatives_map[[rep_feature]] <- cluster
     }
 
     representatives[i] <- rep_feature
-    representatives_map[[rep_feature]] <- cluster
   }
 
   list(
