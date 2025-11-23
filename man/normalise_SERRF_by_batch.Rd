@@ -8,7 +8,7 @@ normalise_SERRF_by_batch(
   df,
   target_cols = NULL,
   is_qc = NULL,
-  batch_col,
+  strata_col,
   num_screen_SERRF = 10
 )
 }
@@ -19,7 +19,7 @@ normalise_SERRF_by_batch(
 
 \item{is_qc}{Logical vector indicating which rows are QC samples. Must be the same length as the number of rows in \code{df}.}
 
-\item{batch_col}{Name of the column containing batch IDs. Must exist in \code{df} and be a factor with no NA values.}
+\item{strata_col}{Name of the column containing batch/strata IDs. Must exist in \code{df} and be a factor with no NA values.}
 
 \item{num_screen_SERRF}{Number of correlated features to use in model fitting. Default is 10.}
 }
