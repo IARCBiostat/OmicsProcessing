@@ -22,6 +22,7 @@ Here is more details on the modules:
 4) Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
 5) SERRF batch correction vignette: [Batch correction using SERRF](articles/serrf-normalisation.html)
 6) Feature clustering vignette: [Retention-time clustering](articles/feature-clustering.html)
+7) Developer guide: [Developers & Contributors](articles/developer-guidelines.html)
 
 
 
@@ -60,4 +61,5 @@ processed <- process_data(
 - Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
 - SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
 - Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
+- Developers & contributors: [Developer guide](articles/developer-guidelines.html)
 - Modular workflow deep dive: [README section](https://github.com/farnudia/OmicsProcessing#modular-workflow)
