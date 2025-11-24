@@ -1,0 +1,9 @@
+url: ~
+template:
+  bootstrap: 5
+
+destination: docs
+
+home:
+  title: "OmicsProcessing"
+  description: "Pre-analysis processing workflows for omics data: filtering, QC, and SERRF-based normalization with batch/strata support."
