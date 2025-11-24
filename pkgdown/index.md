@@ -14,7 +14,12 @@ Pre-analysis processing for omics data (metabolomics, proteomics), covering miss
 
 - Compose individual steps to suit your study design and QC needs.
 - Typical sequence: filter missingness (`filter_by_missingness()`), detect outliers (`remove_outliers()`), impute (`hybrid_imputation()`), and normalise (`normalise_SERRF_by_batch()`), with helpers such as `resolve_target_cols()`.
-- See the modular workflow write-up for a deeper walk-through: [Modular workflow guide](https://github.com/farnudia/OmicsProcessing#modular-workflow).
+
+Here is more details on the modules:
+1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
+2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
+
+
 
 ## Quick start
 
@@ -44,6 +49,8 @@ processed <- process_data(
 ## Resources
 
 - Package overview and SERRF-by-strata vignette: [OmicsProcessing Overview](articles/OmicsProcessing-intro.html)
+- Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
+- Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
 - Function reference index: [All functions](reference/index.html)
 - Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
 - Modular workflow deep dive: [README section](https://github.com/farnudia/OmicsProcessing#modular-workflow)
