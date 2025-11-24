@@ -18,6 +18,7 @@ Pre-analysis processing for omics data (metabolomics, proteomics), covering miss
 Here is more details on the modules:
 1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
 2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
+3) Log-transform vignette: [Log transformation (log1p)](articles/log-transformation.html)
 
 
 
@@ -53,4 +54,5 @@ processed <- process_data(
 - Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
 - Function reference index: [All functions](reference/index.html)
 - Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
+- Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
 - Modular workflow deep dive: [README section](https://github.com/farnudia/OmicsProcessing#modular-workflow)
