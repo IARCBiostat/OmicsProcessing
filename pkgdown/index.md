@@ -19,6 +19,7 @@ Here is more details on the modules:
 1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
 2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
 3) Log-transform vignette: [Log transformation (log1p)](articles/log-transformation.html)
+4) Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
 
 
 
@@ -52,6 +53,7 @@ processed <- process_data(
 - Package overview and SERRF-by-strata vignette: [OmicsProcessing Overview](articles/OmicsProcessing-intro.html)
 - Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
 - Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
+- Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
 - Function reference index: [All functions](reference/index.html)
 - Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
 - Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
