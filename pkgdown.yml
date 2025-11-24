@@ -1,0 +1,16 @@
+pandoc: 3.1.11
+pkgdown: 2.2.0
+pkgdown_sha: ~
+articles:
+  data-filtering: data-filtering.html
+  developer-guidelines: developer-guidelines.html
+  feature-clustering: feature-clustering.html
+  hybrid-imputation: hybrid-imputation.html
+  log-transformation: log-transformation.html
+  outlier-removal: outlier-removal.html
+  process_data: process_data.html
+  serrf-normalisation: serrf-normalisation.html
+last_built: 2025-11-24T20:12Z
+urls:
+  reference: https://iarcbiostat.github.io/OmicsProcessing/reference
+  article: https://iarcbiostat.github.io/OmicsProcessing/articles

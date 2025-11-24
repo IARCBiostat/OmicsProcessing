@@ -1,0 +1,40 @@
+# Log transformation with log1p()
+
+## Step 3: Log transformation
+
+``` r
+feature_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
+log_transformed_df <- clean_df %>%
+  dplyr::mutate(dplyr::across(
+    .cols = tidyselect::all_of(feature_cols),
+    .fns = ~ log1p(.x),
+    .names = "{.col}"
+  ))
+```
+
+Apply a natural log transform with a +1 offset across all feature
+columns.
+[`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.md)
+lets you declare the feature set via names, tidyselect helpers, or regex
+(e.g., `"^met_"`, `"feature[0-9]+"`, or `"@"` to use all feature
+columns). The resulting log1p scaling often reduces skewness, stabilizes
+variance, and moderates the influence of extreme values without
+discarding zeros.
+
+### Why use `log1p`?
+
+- Handles zeros gracefully (no need to add a pseudo-count manually).
+- Produces smoother distributions that are friendlier for downstream
+  modeling and distance-based methods.
+- Keeps column naming intact via `.names = "{.col}"`, so you can swap
+  the transformed data back into your pipeline without additional
+  renaming.
+
+### Tips for choosing feature columns
+
+- Prefer explicit targets for clarity: e.g.,
+  `resolve_target_cols(clean_df, c("met_a", "met_b"))`.
+- Regex or tidyselect helpers are useful for wide matrices:
+  `resolve_target_cols(clean_df, tidyselect::starts_with("met_"))`.
+- Ensure feature columns are numeric; convert factors/characters before
+  transformation to avoid unintended `NA`s.

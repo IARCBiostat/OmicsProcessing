@@ -1,0 +1,143 @@
+# Outlier removal with remove_outliers()
+
+## Outlier removal using PCA + LOF
+
+``` r
+outlier_results <- OmicsProcessing::remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = TRUE
+)
+clean_df <- outlier_results$df_filtered
+```
+
+This function detects and removes outliers from the dataset using a
+PCA + Local Outlier Factor (LOF) workflow. Outliers are identified only
+among non-QC samples. Missing values can be imputed temporarily for
+detection, and original `NA`s can be restored afterward. If
+`return_ggplots = TRUE`, PCA plots are returned (see notes below). See
+[`remove_outliers()`](https://iarcbiostat.github.io/OmicsProcessing/reference/remove_outliers.md).
+
+### Optional: stratified outlier detection (`strata`)
+
+By default, **no stratification** is used (all non-QC samples are
+assessed together). You can optionally provide a **stratification
+variable** so that outlier detection runs **independently within each
+stratum**, and results are then merged:
+
+- Supply `strata` as either:
+
+  - the **name of a column** in `df`, or
+  - an **external vector** of length `nrow(df)` (e.g., a custom
+    grouping).
+
+- Within each stratum:
+
+  - QC rows are **excluded** from detection (but always kept in the
+    final output).
+  - If `impute_method = "half-min-value"`, imputation is performed
+    **within that stratum** on `target_cols`.
+  - PCA → LOF → Tukey thresholding are applied to identify outliers.
+
+- The function returns the union of outlier sample IDs across strata and
+  removes only those from the non-QC portion before recombining with QC
+  rows.
+
+- When `return_ggplots = TRUE`, you’ll get a **named list of per-stratum
+  plots** in `outlier_results$plot_samples_outlier`.
+
+**Examples**
+
+``` r
+## 1) No stratification (default)
+res <- OmicsProcessing::remove_outliers(
+  df, 
+  target_cols = c("f1","f2","f3"),
+  is_qc = df$sample_type == "sQC"
+)
+
+## 2) Stratify by a column (e.g., batch)
+res_batch <- OmicsProcessing::remove_outliers(
+  df, 
+  target_cols = c("f1","f2","f3"),
+  is_qc = df$sample_type == "sQC",
+  strata = "batch",
+  return_ggplots = TRUE
+)
+
+## 3) Stratify by an external vector
+grp <- ifelse(df$center %in% c("C1","C2"), "C12", "C3")
+res_grp <- OmicsProcessing::remove_outliers(
+  df, 
+  target_cols = tidyselect::starts_with("feat_"),
+  is_qc = df$sample_type == "sQC",
+  strata = grp,
+  restore_missing_values = TRUE
+)
+```
+
+### Implementation notes & requirements
+
+- **PCA:** implemented via
+  [`stats::prcomp()`](https://rdrr.io/r/stats/prcomp.html).
+- **LOF distances:** computed with
+  [`bigutilsr::LOF()`](https://rdrr.io/pkg/bigutilsr/man/LOF.html).
+- **Outlier thresholding:** via
+  [`bigutilsr::tukey_mc_up()`](https://rdrr.io/pkg/bigutilsr/man/tukey_mc_up.html).
+
+Practical constraints:
+
+- You must have **enough non-QC samples per stratum** for PCA and LOF to
+  be meaningful. Very small strata (e.g., \< ~8–10 samples) may yield
+  unstable or invalid LOF results.
+- Features in `target_cols` should be **numeric**, with **no infinite
+  values**; missing values are handled by the optional imputation step
+  but **constant/zero-variance features** can break PCA.
+- LOF requires a number of neighbors (`K`); if a stratum has too few
+  samples relative to `K`, `LOF()` may error or degenerate. As a rule of
+  thumb, ensure **`n_samples_stratum >> K`**.
+- Very high **p/n ratios** (many more features than samples) can make
+  PCA and LOF unstable. Consider filtering features before running this
+  step.
+- **ggplot generation requires at least 10 feature columns** in
+  `target_cols`. If fewer than 10 are provided, plots cannot be
+  generated; in such cases you should leave `return_ggplots = FALSE`
+  (the default).
+
+**Returned values**
+
+- `df_filtered`: input `df` with detected outlier **non-QC** rows
+  removed (QC rows always retained).
+- `excluded_ids`: vector of removed row names (union across strata).
+- `plot_samples_outlier`: `NULL` or a **named list of ggplot objects**
+  (one per stratum) when `return_ggplots = TRUE` *and*
+  `length(target_cols) >= 10`.
+
+### How LOF works in PCA space (extra detail)
+
+Outliers are identified using the Local Outlier Factor (LOF) algorithm
+applied in PCA-reduced space. LOF detects locally sparse samples
+relative to their neighbours, improving data consistency and reducing
+technical noise.
+
+**Extended description:** LOF is a density-based algorithm that compares
+the local density of each point to that of its neighbours. It first
+finds the *k* nearest neighbours (typically by Euclidean distance) and
+computes each point’s **local reachability density (LRD)**—the inverse
+of the average reachability distance that reflects local crowding.
+Points in dense regions have high LRD; points in sparse regions have low
+LRD. The **LOF score** is the ratio of the neighbours’ average LRD to
+the point’s LRD; values near 1 indicate typical density, while values
+well above 1 signal local sparsity and potential outliers.
+
+When LOF runs in **PCA space** (e.g., first 10 principal components), it
+assesses local density in a reduced subspace capturing the dominant
+structure and variance. This projection trims noise and redundancy from
+correlated features, improving robustness and efficiency. Samples with
+high LOF scores are locally isolated relative to the main patterns in
+the reduced space—indicating they may be biologically, technically, or
+experimentally unusual rather than random fluctuations.

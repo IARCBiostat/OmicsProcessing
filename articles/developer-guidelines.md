@@ -1,0 +1,191 @@
+# Developers & Contributors
+
+## Developers & Contributors
+
+We welcome contributions to **OmicsProcessing**! Our highest priority is
+**clean code** and **good documentation** — with emphasis on *good*.
+
+### How to Contribute
+
+- Fork the repository.
+- Create a new **issue** describing your objective or planned change.
+- Develop your changes on a **separate branch**.
+- Once finished, open a **pull request** for review.
+
+All pull requests must pass **unit tests (UTs)** and include clear
+documentation.
+
+------------------------------------------------------------------------
+
+### Coding Style Guidelines
+
+- **Modular design**: factor each task into its own function.
+- **Naming**: lowercase, `snake_case`, and meaningfully descriptive.
+- **Documentation**: every function must have complete **roxygen2**
+  docs, including at least one example.
+- **LLM-assisted cleanup**: feel free to use LLMs to improve clarity,
+  formatting, and naming suggestions.
+
+#### Example function with roxygen2 documentation
+
+``` r
+#' Add Two Numbers
+#'
+#' This function takes two numeric values and returns their sum.
+#'
+#' @param x A numeric value.
+#' @param y A numeric value.
+#'
+#' @return A numeric value representing the sum of `x` and `y`.
+#' @export
+#'
+#' @examples
+#' add_two_numbers(1, 2)
+#' add_two_numbers(-5, 10)
+add_two_numbers <- function(x, y) {
+  x + y
+}
+```
+
+**Note on `@export`**  
+Functions marked with `@export` are available to end users. Functions
+without `@export` remain internal helpers—they can still be tested and
+documented, but they are not part of the public API.
+
+### Unit Tests (UTs)
+
+Every function must have accompanying **unit tests**. Unit tests check
+function behavior and guide future contributors when changes are needed.
+
+#### Example unit test
+
+``` r
+test_that("add_two_numbers works as expected", {
+  expect_equal(add_two_numbers(1, 2), 3)
+  expect_equal(add_two_numbers(-5, 10), 5)
+  expect_true(is.numeric(add_two_numbers(2, 2)))
+})
+```
+
+------------------------------------------------------------------------
+
+### Writing Good UTs (mini-guide)
+
+Good tests verify **behavior** (public API contracts), not
+implementation details. Aim for small, fast, deterministic tests.
+
+**What to cover**
+
+- **Happy path:** typical, correct usage.
+- **Edge cases:** empty inputs, single row/column, NA/NaN/Inf,
+  duplicated IDs, extreme values.
+- **Bad inputs:** wrong types/shapes; assert errors with informative
+  messages.
+- **Boundaries:** off-by-one, min/max thresholds, zero/negative values.
+- **Stochastic steps:** set seeds for reproducibility.
+
+**Expectations to prefer**
+
+- Exact equality:
+  [`expect_identical()`](https://testthat.r-lib.org/reference/equality-expectations.html)
+  (strictest).
+- Numeric comparisons: `expect_equal(..., tolerance = 1e-8)` (floating
+  point).
+- Types/classes: `expect_s3_class(obj, "data.frame")`.
+- Names/columns:
+  `expect_named(df, c("sample_id","metabolite","intensity"))`.
+- Logical properties: `expect_true(all(df$intensity >= 0))`.
+
+**Errors, warnings, messages**
+
+``` r
+expect_error(fn(bad_arg), class = "my_pkg_error")     # classed errors
+expect_warning(fn(x), "deprecated")                   # or a pattern
+expect_message(fn(verbose = TRUE), "Completed step")
+```
+
+**Data-frame outputs**  
+Check structure over exact values when appropriate:
+
+``` r
+out <- normalize_intensity(df, method = "median")
+expect_s3_class(out, "data.frame")
+expect_true(all(c("sample_id","metabolite","intensity_norm") %in% names(out)))
+expect_equal(nrow(out), nrow(df))
+```
+
+**Fixtures & temporary files**
+
+- Put tiny example inputs under `tests/testthat/fixtures/` (or
+  `inst/extdata/` for examples).
+- Use
+  [`withr::local_tempdir()`](https://withr.r-lib.org/reference/with_tempfile.html)
+  / `local_tempfile()` to avoid polluting the repo.
+- Load fixture paths via
+  `testthat::test_path("fixtures", "tiny_input.csv")`.
+
+------------------------------------------------------------------------
+
+### Tests Directory Structure & Naming
+
+**Recommended layout**
+
+    OmicsProcessing/
+    ├─ R/
+    ├─ tests/
+    │  ├─ testthat.R
+    │  └─ testthat/
+    │     ├─ test-process_data.R
+    │     ├─ test-normalize_intensity.R
+    │     ├─ test-impute_values.R
+    │     ├─ helper-setup.R
+    │     └─ fixtures/
+    │        ├─ tiny_input.csv
+    │        └─ tiny_metadata.csv
+    └─ ...
+
+**Files**
+
+- `tests/testthat.R`:
+
+``` r
+library(testthat)
+library(OmicsProcessing)
+test_check("OmicsProcessing")
+```
+
+- Unit test files live in `tests/testthat/` and must start with
+  `test-*.R`.
+  - One file per exported function or cohesive feature, e.g.,
+    `test-normalize_intensity.R`, `test-impute_values.R`,
+    `test-integration-process_data.R`.
+- Fixtures (tiny static inputs) go under `tests/testthat/fixtures/`.
+
+**Naming conventions**
+
+- Files: `test-<function_or_feature>.R`
+- Tests: clear, behavior-oriented descriptions, e.g.,
+  `test_that("process_data() errors on missing required columns", { ... })`.
+
+------------------------------------------------------------------------
+
+### Running Unit Tests
+
+**Everything**
+
+``` r
+devtools::test()
+```
+
+**Filter by file or name**
+
+``` r
+devtools::test(filter = "normalize_intensity") # matches file or test name
+testthat::test_file("tests/testthat/test-impute_values.R")
+```
+
+**Coverage (optional but encouraged)**
+
+``` r
+covr::report()   # opens HTML coverage report
+```

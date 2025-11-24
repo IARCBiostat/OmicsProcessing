@@ -1,0 +1,107 @@
+# Data filtering with filter_by_missingness()
+
+## Modular Workflow
+
+The following example illustrates a custom pipeline using individual
+functions from the package. Each section is accompanied by an
+explanation and guidance. For detailed parameter descriptions, please
+refer to the function documentation (e.g.,
+[`?OmicsProcessing::filter_by_missingness`](https://iarcbiostat.github.io/OmicsProcessing/reference/filter_by_missingness.md)).
+
+This modular approach is particularly useful for users who need detailed
+control over processing steps or want to adapt parts of the pipeline to
+specific datasets or experimental designs.
+
+For full argument details, see the function reference:
+[filter_by_missingness()](https://iarcbiostat.github.io/OmicsProcessing/reference/filter_by_missingness.md).
+
+### Step 1: Filter by missingness
+
+``` r
+filtered_df <- OmicsProcessing::filter_by_missingness(
+  df,
+  row_thresh = 0.5,  # Remove features with >50% missingness
+  col_thresh = 0.5,  # Remove samples with >50% missingness
+  target_cols = "@",  # Automatically detect feature columns
+  is_qc = grepl("^sQC", df$sample_type),  # Identify QC samples
+  filter_order = "iterative"  # Default: iterative filtering
+)
+```
+
+This step removes features and/or samples with a high proportion of
+missing values. You can customise thresholds and specify which samples
+are Quality Control (QC). **QC rows are always retained in the returned
+dataset, but they are excluded when calculating the missingness
+proportions.** You can either pass a regular expression for automatic
+feature column detection (for example with `target_cols = "@"` the
+function will classify all columns that have the `@` as a feature
+column).
+
+------------------------------------------------------------------------
+
+#### Filtering order (`filter_order`)
+
+The parameter `filter_order` controls the sequence in which row and
+column filtering is applied:
+
+- **`"iterative"` (default):** Alternates between row and column
+  filtering until results stop changing (or `max_iter` is reached).
+  Ensures that both row and column thresholds are satisfied
+  simultaneously.
+- **`"col_then_row"`:** Removes columns first, then filters rows.
+- **`"row_then_col"`:** Removes rows first, then filters columns.
+- **`"simultaneous"`:** Determines rows and columns to keep
+  independently, then intersects the results.
+
+The `"iterative"` option is generally more conservative: it repeatedly
+refines the dataset until both row and column criteria are satisfied,
+which can produce different results compared to the one-pass methods.
+
+------------------------------------------------------------------------
+
+#### Example
+
+For the dataset below (rows 2 and 5 are marked as QC):
+
+``` r
+df <- data.frame(
+  a = c(NA, 1, NA, 1, NA),
+  b = c(NA, NA, 2, 2, NA),
+  c = c(3, NA, NA, 3, NA),
+  d = 1
+)
+is_qc <- c(FALSE, TRUE, FALSE, FALSE, TRUE)
+target_cols <- c("a","b","c")
+
+df
+#    a  b  c d
+# 1 NA NA  3 1
+# 2  1 NA NA 1   <- QC
+# 3 NA  2 NA 1
+# 4  1  2  3 1
+# 5 NA NA NA 1   <- QC
+```
+
+Different `filter_order` choices yield different results:
+
+``` r
+# Iterative (default)
+filter_by_missingness(df, 0.5, 0.5, target_cols, is_qc, filter_order = "iterative")
+#    b  c d
+# 1 NA  3 1
+# 2 NA NA 1
+# 3  2 NA 1
+# 4  2  3 1
+# 5 NA NA 1
+
+# Simultaneous
+filter_by_missingness(df, 0.5, 0.5, target_cols, is_qc, filter_order = "simultaneous")
+#    b  c d
+# 2 NA NA 1
+# 4  2  3 1
+# 5 NA NA 1
+```
+
+Notice how **row 1 is retained in the iterative case but dropped in the
+simultaneous case**, because the iterative procedure keeps alternating
+until both row and column criteria are satisfied together.

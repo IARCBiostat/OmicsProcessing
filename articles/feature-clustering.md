@@ -1,0 +1,107 @@
+# Feature clustering by retention time
+
+## Cluster features by retention time
+
+[`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.md)
+groups features that elute together based on similar retention time (RT)
+and returns a data frame that **keeps unclustered features untouched**
+plus **one representative per RT cluster**. Use the
+`representatives_map` to see which raw features each representative
+stands in for. See
+[`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.md).
+
+> **Prerequisites:** use **imputed and normalised** data before this
+> step—RT clustering assumes no missing values and benefits from
+> stabilised intensities.
+
+In this context is_qc variable will not apply this algorithm to the
+rows/samples flagged by is_qc. Normally we wish to assign is_qc as NULL
+so that all rows contribute to the clustering.
+
+### How representatives are chosen with scores
+
+[`get_features_representatives_based_on_scores()`](https://iarcbiostat.github.io/OmicsProcessing/reference/get_features_representatives_based_on_scores.md)
+selects **one feature per cluster**:
+
+- Single-feature clusters: the lone feature is returned.
+- Multi-feature clusters: the feature with the **highest score** is
+  returned; `representatives_map` records all members it represents.
+
+### Example 1: Score-based representatives (mean intensity pre-normalisation)
+
+``` r
+# Assume `imputed_df` is your imputed, SERRF-normalised data
+# Use pre-normalisation means as scores
+target_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
+scores <- colMeans(pre_normalised_df[, target_cols])
+
+res_scores <- OmicsProcessing::cluster_features_by_retention_time(
+  df = normalised_df,
+  target_cols = target_cols,
+  rt_height = 0.07,
+  method = "scores",
+  scores = scores
+)
+
+clustered_df <- res_scores$clustered_df          # keeps untouched features + representatives
+rep_map <- res_scores$representatives_map        # which raw features each rep stands for
+```
+
+Here `rt_height` sets the maximum RT spread of a cluster—features whose
+RTs differ by less than `rt_height` are grouped. Within each cluster,
+the scores you supply are inspected and the feature with the **largest
+score** becomes the representative. If scores are pre-normalisation mean
+intensities, each cluster’s representative is simply the feature with
+the highest average intensity. `representatives_map` uses representative
+names as list names and stores the vector of feature names each rep
+stands for.
+
+### How representatives are chosen with correlations
+
+Within each RT cluster (features whose max RT difference is below
+`rt_height`),
+[`cluster_features_based_on_correlations()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_based_on_correlations.md)
+adds a correlation-driven layer:
+
+- Features are split/merged based on `cut_height` (multi-feature groups)
+  or `corr_thresh` (pairs).
+- Groups of size 1: kept as-is.
+- Groups of size 2: if `|corr| >= corr_thresh`, collapse to a synthetic
+  PC1 feature; otherwise keep both originals.
+- Groups of size ≥3: hierarchical clustering (ClustOfVar) is cut at
+  `cut_height`; each sub-cluster is summarised by a synthetic PC1
+  aligned to the first feature.
+
+The returned `representatives_map` uses synthetic feature names as list
+names and stores the vector of raw feature names that were integrated
+into each synthetic representative.
+
+### Example 2: Correlation-based summarisation within RT clusters
+
+``` r
+res_corr <- OmicsProcessing::cluster_features_by_retention_time(
+  df = imputed_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", imputed_df$sample_type),
+  rt_height = 0.07,
+  method = "correlations",
+  cut_height = 0.26,
+  corr_thresh = 0.75
+)
+
+clustered_df_corr <- res_corr$clustered_df       # includes synthetic reps if correlations split clusters
+rep_map_corr <- res_corr$representatives_map
+```
+
+### Tips
+
+- Choose `rt_height` to match instrument RT precision; smaller height
+  yields more (tighter) clusters.
+- With `"scores"`, ensure `scores` is a **named numeric vector** aligned
+  with `target_cols`; using pre-normalisation means is a simple, fast
+  heuristic.
+- With `"correlations"`, adjust `cut_height`/`corr_thresh` to control
+  how aggressively correlated features are merged into a synthetic
+  representative.
+- Inspect `representatives_map` to trace each representative back to its
+  source features for reporting or sensitivity checks.
