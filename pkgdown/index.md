@@ -15,16 +15,6 @@ Pre-analysis processing for omics data (metabolomics, proteomics), covering miss
 - Compose individual steps to suit your study design and QC needs.
 - Typical sequence: filter missingness (`filter_by_missingness()`), detect outliers (`remove_outliers()`), impute (`hybrid_imputation()`), and normalise (`normalise_SERRF_by_batch()`), with helpers such as `resolve_target_cols()`.
 
-Here is more details on the modules:
-1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
-2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
-3) Log-transform vignette: [Log transformation (log1p)](articles/log-transformation.html)
-4) Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
-5) SERRF batch correction vignette: [Batch correction using SERRF](articles/serrf-normalisation.html)
-6) Feature clustering vignette: [Retention-time clustering](articles/feature-clustering.html)
-7) Developer guide: [Developers & Contributors](articles/developer-guidelines.html)
-
-
 
 ## Quick start
 
@@ -50,6 +40,24 @@ processed <- process_data(
   plate_correction = TRUE
 )
 ```
+
+Or build your one analysis pipeline using teh follwoing modules:
+
+1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
+2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
+3) Log-transform vignette: [Log transformation (log1p)](articles/log-transformation.html)
+4) Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
+5) SERRF batch correction vignette: [Batch correction using SERRF](articles/serrf-normalisation.html)
+6) Feature clustering vignette: [Retention-time clustering](articles/feature-clustering.html)
+
+
+## Developers & Contributors
+
+We welcome contributions to **OmicsProcessing**! Our highest priority is
+**clean code** and **good documentation** — with emphasis on *good*.
+
+PLease follow these guidlines to contribute: [Developers & Contributors](articles/developer-guidelines.html)
+
 
 ## Resources
 
