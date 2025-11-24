@@ -32,22 +32,6 @@ SERRF-based normalisation across batches or strata.
   with helpers such as
   [`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.md).
 
-Here is more details on the modules: 1) Data filtering vignette:
-[Filtering
-missingness](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.md)
-2) Outlier removal vignette: [PCA + LOF outlier
-detection](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.md)
-3) Log-transform vignette: [Log transformation
-(log1p)](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.md)
-4) Hybrid imputation vignette: [Random Forest +
-LCMD](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.md)
-5) SERRF batch correction vignette: [Batch correction using
-SERRF](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.md)
-6) Feature clustering vignette: [Retention-time
-clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.md)
-7) Developer guide: [Developers &
-Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.md)
-
 ## Quick start
 
 ``` r
@@ -72,6 +56,29 @@ processed <- process_data(
   plate_correction = TRUE
 )
 ```
+
+Or build your one analysis pipeline using teh follwoing modules:
+
+1.  Data filtering vignette: [Filtering
+    missingness](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.md)
+2.  Outlier removal vignette: [PCA + LOF outlier
+    detection](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.md)
+3.  Log-transform vignette: [Log transformation
+    (log1p)](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.md)
+4.  Hybrid imputation vignette: [Random Forest +
+    LCMD](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.md)
+5.  SERRF batch correction vignette: [Batch correction using
+    SERRF](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.md)
+6.  Feature clustering vignette: [Retention-time
+    clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.md)
+
+## Developers & Contributors
+
+We welcome contributions to **OmicsProcessing**! Our highest priority is
+**clean code** and **good documentation** — with emphasis on *good*.
+
+PLease follow these guidlines to contribute: [Developers &
+Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.md)
 
 ## Resources
 
