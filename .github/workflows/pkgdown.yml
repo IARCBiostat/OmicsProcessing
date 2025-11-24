@@ -37,6 +37,8 @@ jobs:
         with:
           extra-packages: |
             pkgdown
+            any::ClustOfVar
+            any::FactoMineR
             local::.
           needs: website
 
