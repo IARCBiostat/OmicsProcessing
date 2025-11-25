@@ -2,7 +2,7 @@
 title: "Outlier removal with remove_outliers()"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Outlier removal with remove_outliers}
+  %\VignetteIndexEntry{Outlier removal with remove_outliers()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

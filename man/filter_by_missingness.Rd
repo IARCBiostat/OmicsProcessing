@@ -106,5 +106,5 @@ print(filter_by_missingness(df, row_thresh=0.5, col_thresh=0.5,
 # 4  1  2  3 1
 # 5 NA NA NA 1
 
-For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
+# For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
 }
