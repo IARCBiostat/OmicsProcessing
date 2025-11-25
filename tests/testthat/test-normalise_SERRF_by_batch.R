@@ -1,4 +1,4 @@
-test_that("normalise_SERRF_by_batch handles valid input", {
+test_that("normalise_SERRF handles valid input", {
   set.seed(123)
   df <- data.frame(
     Feature1 = rnorm(12),
@@ -9,7 +9,7 @@ test_that("normalise_SERRF_by_batch handles valid input", {
   )
   is_qc <- c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE)
 
-  result <- normalise_SERRF_by_batch(
+  result <- normalise_SERRF(
     df = df,
     target_cols = c("Feature1", "Feature2", "Feature3"),
     is_qc = is_qc,
@@ -22,29 +22,29 @@ test_that("normalise_SERRF_by_batch handles valid input", {
   expect_false(any(is.na(result[, c("Feature1", "Feature2", "Feature3")])))
 })
 
-test_that("normalise_SERRF_by_batch errors on NA in target features", {
+test_that("normalise_SERRF_ errors on NA in target features", {
   df <- data.frame(
     Feature1 = c(1, NA, 3, 4),
     batch = factor(c("A", "A", "B", "B"))
   )
   expect_error(
-    normalise_SERRF_by_batch(df, target_cols = "Feature1", is_qc = c(TRUE, TRUE, FALSE, FALSE), strata_col = "batch"),
+    normalise_SERRF(df, target_cols = "Feature1", is_qc = c(TRUE, TRUE, FALSE, FALSE), strata_col = "batch"),
     "contain NA values"
   )
 })
 
-test_that("normalise_SERRF_by_batch errors on non-numeric target features", {
+test_that("normalise_SERRF errors on non-numeric target features", {
   df <- data.frame(
     Feature1 = as.character(c(1, 2, 3, 4)),
     batch = factor(c("A", "A", "B", "B"))
   )
   expect_error(
-    normalise_SERRF_by_batch(df, target_cols = "Feature1", is_qc = c(TRUE, TRUE, FALSE, FALSE), strata_col = "batch"),
+    normalise_SERRF(df, target_cols = "Feature1", is_qc = c(TRUE, TRUE, FALSE, FALSE), strata_col = "batch"),
     "must be numeric"
   )
 })
 
-test_that("normalise_SERRF_by_batch normalises synthetic data with drift", {
+test_that("normalise_SERRF normalises synthetic data with drift", {
   set.seed(42)
 
   make_test_df <- function() {
@@ -82,7 +82,7 @@ test_that("normalise_SERRF_by_batch normalises synthetic data with drift", {
 
   df_test <- make_test_df()
 
-  result <- normalise_SERRF_by_batch(
+  result <- normalise_SERRF(
     df = df_test,
     target_cols = c("Feature1", "Feature2", "Feature3"),
     is_qc = df_test$is_qc,
