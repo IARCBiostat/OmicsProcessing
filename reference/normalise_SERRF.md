@@ -10,7 +10,7 @@ normalise_SERRF(
   df,
   target_cols = NULL,
   is_qc = NULL,
-  strata_col,
+  strata_col = NULL,
   num_screen_SERRF = 10
 )
 ```
@@ -33,8 +33,10 @@ normalise_SERRF(
 
 - strata_col:
 
-  Name of the column containing batch/strata IDs. Must exist in `df` and
-  be a factor with no NA values.
+  Name of the column containing batch/strata IDs. If `NULL`, a dummy
+  single-level strata is created so all samples are treated as one
+  batch. When provided, the column must exist in `df` and be a factor
+  with no NA values.
 
 - num_screen_SERRF:
 

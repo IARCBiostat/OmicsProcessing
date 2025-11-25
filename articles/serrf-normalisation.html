@@ -79,7 +79,7 @@ Forest (SERRF)<a class="anchor" aria-label="anchor" href="#batch-correction-usin
 <span>  <span class="va">imputed_df</span>,</span>
 <span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
 <span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">imputed_df</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
-<span>  strata_col <span class="op">=</span> <span class="st">"batch"</span></span>
+<span>  strata_col <span class="op">=</span> <span class="st">"batch"</span>  <span class="co"># omit to treat all samples as one strata</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/normalise_SERRF.html">normalise_SERRF()</a></code> models unwanted technical variation
 using QC samples within each batch/stratum and applies SERRF
@@ -92,14 +92,18 @@ logical <code>is_qc</code> flag for each row. See the reference: <a href="../ref
 </h3>
 <ul>
 <li>
-<code>strata_col</code> must exist in <code>df</code> (will be
-coerced to a factor if needed) with <strong>no NA levels</strong>.</li>
+<code>strata_col</code>: provide the batch/strata column when it
+exists; if you omit it, a dummy single-level strata is created so all
+samples are treated as one batch. If supplied, it is coerced to a factor
+(no NAs).</li>
 <li>
 <code>is_qc</code> is a logical vector the same length as
 <code>nrow(df)</code>; ensure every batch has enough QC samples for the
 SERRF model.</li>
 <li>All <code>target_cols</code> must be numeric and <strong>contain no
 NA values</strong> (impute beforehand).</li>
+<li>At least three target features are required (SERRF needs predictors
+to model each feature).</li>
 </ul>
 </div>
 <div class="section level3">
