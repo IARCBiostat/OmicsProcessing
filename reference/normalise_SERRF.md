@@ -35,8 +35,7 @@ normalise_SERRF(
 
   Name of the column containing batch/strata IDs. If `NULL`, a dummy
   single-level strata is created so all samples are treated as one
-  batch. When provided, the column must exist in `df` and be a factor
-  with no NA values.
+  batch. When provided, the column must exist in `df` with no NA values.
 
 - num_screen_SERRF:
 
