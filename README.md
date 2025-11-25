@@ -1,6 +1,6 @@
 # OmicsProcessing
 
-Pre-analysis processing for metabolomics and proteomics: missingness filtering, outlier handling, imputation, transformation, matched case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata.
+Pre-analysis processing for metabolomics and proteomics: missingness filtering, outlier handling, imputation, transformation, matched case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata. [Please visit out website for more information and vignettes](https://iarcbiostat.github.io/OmicsProcessing/index.html)
 
 ## Choose your workflow
 
