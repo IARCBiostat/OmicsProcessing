@@ -7,7 +7,7 @@
 #' @param is_qc Logical vector indicating which rows are QC samples. Must be the same length as the number of rows in `df`.
 #' @param strata_col Name of the column containing batch/strata IDs. If `NULL`, a dummy
 #'   single-level strata is created so all samples are treated as one batch. When
-#'   provided, the column must exist in `df` and be a factor with no NA values.
+#'   provided, the column must exist in `df` with no NA values.
 #' @param num_screen_SERRF Number of correlated features to use in model fitting. Default is 10.
 #'
 #' @return A normalized data frame.
