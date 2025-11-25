@@ -5,24 +5,32 @@
 #' @param df A data frame or tibble.
 #' @param target_cols Feature columns to normalize (character vector or selector passed to `resolve_target_cols`).
 #' @param is_qc Logical vector indicating which rows are QC samples. Must be the same length as the number of rows in `df`.
-#' @param strata_col Name of the column containing batch/strata IDs. Must exist in `df` and be a factor with no NA values.
+#' @param strata_col Name of the column containing batch/strata IDs. If `NULL`, a dummy
+#'   single-level strata is created so all samples are treated as one batch. When
+#'   provided, the column must exist in `df` and be a factor with no NA values.
 #' @param num_screen_SERRF Number of correlated features to use in model fitting. Default is 10.
 #'
 #' @return A normalized data frame.
 #' @export
-normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col, num_screen_SERRF = 10) {
+normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = NULL, num_screen_SERRF = 10) {
     # ---- Validation ----
-    if (missing(strata_col) || is.null(strata_col) || !nzchar(strata_col)) {
-        stop("You must provide the name of the batch/strata column using the `strata_col` argument.")
-    }
-    if (!strata_col %in% colnames(df)) {
-        stop(paste0("Column '", strata_col, "' was not found in the input data frame."))
-    }
+    temp_strata_cols <- character(0)
 
-    if (!is.factor(df[[strata_col]])) {
-        strata_col_factor <- paste0(strata_col, "_factor")
-        df[[strata_col_factor]] <- as.factor(df[[strata_col]])
-        strata_col <- strata_col_factor
+    if (missing(strata_col) || is.null(strata_col) || !nzchar(strata_col)) {
+        strata_col <- "__serrf_strata"
+        df[[strata_col]] <- factor("all_samples")
+        temp_strata_cols <- c(temp_strata_cols, strata_col)
+    } else {
+        if (!strata_col %in% colnames(df)) {
+            stop(paste0("Column '", strata_col, "' was not found in the input data frame."))
+        }
+
+        if (!is.factor(df[[strata_col]])) {
+            strata_col_factor <- paste0(strata_col, "_factor")
+            df[[strata_col_factor]] <- as.factor(df[[strata_col]])
+            strata_col <- strata_col_factor
+            temp_strata_cols <- c(temp_strata_cols, strata_col_factor)
+        }
     }
 
     target_cols <- resolve_target_cols(df, target_cols)
@@ -127,7 +135,8 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col, nu
         df_normalised[[feature_name]][!is_qc] <- feat_sample
     }
 
-    df_normalised <- df_normalised[, !(names(df_normalised) %in% "__is_qc")]
+    drop_cols <- c("__is_qc", temp_strata_cols)
+    df_normalised <- df_normalised[, !(names(df_normalised) %in% drop_cols)]
 
     return(df_normalised)
 }

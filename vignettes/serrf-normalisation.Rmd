@@ -21,7 +21,7 @@ out_serrf <- OmicsProcessing::normalise_SERRF(
   imputed_df,
   target_cols = "@",
   is_qc = grepl("^sQC", imputed_df$sample_type),
-  strata_col = "batch"
+  strata_col = "batch"  # omit to treat all samples as one strata
 )
 ```
 
@@ -35,12 +35,15 @@ row. See the reference:
 
 ### Input requirements
 
-- `strata_col` must exist in `df` (will be coerced to a factor if
-  needed) with **no NA levels**.
+- `strata_col`: provide the batch/strata column when it exists; if you
+  omit it, a dummy single-level strata is created so all samples are
+  treated as one batch. If supplied, it is coerced to a factor (no NAs).
 - `is_qc` is a logical vector the same length as `nrow(df)`; ensure
   every batch has enough QC samples for the SERRF model.
 - All `target_cols` must be numeric and **contain no NA values** (impute
   beforehand).
+- At least three target features are required (SERRF needs predictors to
+  model each feature).
 
 ### Tuning and tips
 
