@@ -22,6 +22,36 @@ test_that("normalise_SERRF handles valid input", {
   expect_false(any(is.na(result[, c("Feature1", "Feature2", "Feature3")])))
 })
 
+test_that("normalise_SERRF uses dummy strata when none provided", {
+  set.seed(99)
+  df <- data.frame(
+    Feature1 = rnorm(10),
+    Feature2 = rnorm(10),
+    Feature3 = rnorm(10),
+    Feature4 = rnorm(10),
+    sample_id = paste0("S", seq_len(10)),
+    stringsAsFactors = FALSE
+  )
+  is_qc <- c(TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE)
+  # df <- data.frame(
+  #   Feature1 = rnorm(8),
+  #   Feature2 = rnorm(8),
+  #   sample_id = paste0("S", seq_len(8))
+  # )
+  # is_qc <- c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE)
+
+  result <- normalise_SERRF(
+    df = df,
+    target_cols = c("Feature1", "Feature2", "Feature3", "Feature4"),
+    is_qc = is_qc,
+    num_screen_SERRF = 2
+  )
+
+  expect_equal(names(result), names(df))
+  expect_equal(dim(result), dim(df))
+  expect_false(any(is.na(result[, c("Feature1", "Feature2", "Feature3", "Feature4")])))
+})
+
 test_that("normalise_SERRF_ errors on NA in target features", {
   df <- data.frame(
     Feature1 = c(1, NA, 3, 4),
@@ -31,6 +61,31 @@ test_that("normalise_SERRF_ errors on NA in target features", {
     normalise_SERRF(df, target_cols = "Feature1", is_qc = c(TRUE, TRUE, FALSE, FALSE), strata_col = "batch"),
     "contain NA values"
   )
+})
+
+test_that("normalise_SERRF drops temporary factor column when coercing strata", {
+  set.seed(1234)
+  df <- data.frame(
+    Feature1 = rnorm(10),
+    Feature2 = rnorm(10),
+    Feature3 = rnorm(10),
+    Feature4 = rnorm(10),
+    batch = rep(c("A", "B"), each = 5),
+    stringsAsFactors = FALSE
+  )
+  is_qc <- c(TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE)
+
+  result <- normalise_SERRF(
+    df = df,
+    target_cols = c("Feature1", "Feature2", "Feature3", "Feature4"),
+    is_qc = is_qc,
+    strata_col = "batch",
+    num_screen_SERRF = 2
+  )
+
+  expect_false(any(grepl("_factor$", names(result))))
+  expect_true("batch" %in% names(result))
+  expect_equal(unique(result$batch), unique(df$batch))
 })
 
 test_that("normalise_SERRF errors on non-numeric target features", {
@@ -48,7 +103,7 @@ test_that("normalise_SERRF normalises synthetic data with drift", {
   set.seed(42)
 
   make_test_df <- function() {
-    n_per_batch <- 10  # 6 samples + 4 QCs per batch
+    n_per_batch <- 10 # 6 samples + 4 QCs per batch
     batches <- c("Batch1", "Batch2")
 
     df <- do.call(rbind, lapply(batches, function(b) {
