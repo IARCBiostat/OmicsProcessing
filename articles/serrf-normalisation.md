@@ -1,9 +1,9 @@
 # Batch correction using SERRF
 
-## Step 5: Batch correction using SERRF
+## Batch correction using Systematical Error Removal using Random Forest (SERRF)
 
 ``` r
-out_serrf <- OmicsProcessing::normalise_SERRF_by_batch(
+out_serrf <- OmicsProcessing::normalise_SERRF(
   imputed_df,
   target_cols = "@",
   is_qc = grepl("^sQC", imputed_df$sample_type),
@@ -11,14 +11,14 @@ out_serrf <- OmicsProcessing::normalise_SERRF_by_batch(
 )
 ```
 
-[`normalise_SERRF_by_batch()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF_by_batch.md)
+[`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.md)
 models unwanted technical variation using QC samples within each
 batch/stratum and applies SERRF normalization to the specified feature
 columns. Use `target_cols` to select features by name, tidyselect
 helper, or regex (resolved via
 [`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.md)),
 and supply a logical `is_qc` flag for each row. See the reference:
-[`normalise_SERRF_by_batch()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF_by_batch.md).
+[`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.md).
 
 ### Input requirements
 

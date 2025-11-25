@@ -171,7 +171,9 @@ multiplying all feature values for ID_10 by 1.5:
 # returning a list of data, outlier plot, and exclusion IDs
 ```
 
-![](inst/outlier-example.png)
+![PCA + LOF outlier example](outlier-example.png)
+
+PCA + LOF outlier example
 
 ### Plate correction
 

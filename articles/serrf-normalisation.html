@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,21 +71,22 @@
     
     
 <div class="section level2">
-<h2 id="step-5-batch-correction-using-serrf">Step 5: Batch correction using SERRF<a class="anchor" aria-label="anchor" href="#step-5-batch-correction-using-serrf"></a>
+<h2 id="batch-correction-using-systematical-error-removal-using-random-forest-serrf">Batch correction using Systematical Error Removal using Random
+Forest (SERRF)<a class="anchor" aria-label="anchor" href="#batch-correction-using-systematical-error-removal-using-random-forest-serrf"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">out_serrf</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/normalise_SERRF_by_batch.html">normalise_SERRF_by_batch</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">out_serrf</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/normalise_SERRF.html">normalise_SERRF</a></span><span class="op">(</span></span>
 <span>  <span class="va">imputed_df</span>,</span>
 <span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
 <span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">imputed_df</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
 <span>  strata_col <span class="op">=</span> <span class="st">"batch"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/normalise_SERRF_by_batch.html">normalise_SERRF_by_batch()</a></code> models unwanted technical
-variation using QC samples within each batch/stratum and applies SERRF
+<p><code><a href="../reference/normalise_SERRF.html">normalise_SERRF()</a></code> models unwanted technical variation
+using QC samples within each batch/stratum and applies SERRF
 normalization to the specified feature columns. Use
 <code>target_cols</code> to select features by name, tidyselect helper,
 or regex (resolved via <code><a href="../reference/resolve_target_cols.html">resolve_target_cols()</a></code>), and supply a
-logical <code>is_qc</code> flag for each row. See the reference: <a href="../reference/normalise_SERRF_by_batch.html"><code>normalise_SERRF_by_batch()</code></a>.</p>
+logical <code>is_qc</code> flag for each row. See the reference: <a href="../reference/normalise_SERRF.html"><code>normalise_SERRF()</code></a>.</p>
 <div class="section level3">
 <h3 id="input-requirements">Input requirements<a class="anchor" aria-label="anchor" href="#input-requirements"></a>
 </h3>

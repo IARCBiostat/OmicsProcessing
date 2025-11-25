@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -60,7 +60,7 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="omicsprocessing">OmicsProcessing<a class="anchor" aria-label="anchor" href="#omicsprocessing"></a>
 </h1></div>
-<p>Pre-analysis processing for omics data (metabolomics, proteomics), covering missingness filtering, outlier handling, imputation, transformation, case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata.</p>
+<p>Pre-analysis processing for metabolomics and proteomics: missingness filtering, outlier handling, imputation, transformation, matched case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata.</p>
 <div class="section level2">
 <h2 id="choose-your-workflow">Choose your workflow<a class="anchor" aria-label="anchor" href="#choose-your-workflow"></a>
 </h2>
@@ -69,16 +69,23 @@
 </h3>
 <ul>
 <li>End-to-end wrapper that can filter on missingness, impute, transform, remove outliers (PCA + LOF), handle matched case-control designs, correct for plate/batch effects, and centre/scale.</li>
-<li>Expects three data frames: feature data, feature meta-data, and sample meta-data; returns processed data frames plus exclusion IDs and PCA/LOF plots.</li>
-<li>Read the full pipeline walk-through in the vignette: <a href="articles/process_data.html">Semi-automated pipeline</a>.</li>
+<li>Takes three data frames (feature data, feature metadata, sample metadata) and returns processed data plus exclusion IDs and PCA/LOF plots.</li>
+<li>Full walk-through: <a href="articles/process_data.html">Semi-automated pipeline</a>.</li>
 </ul>
 </div>
 <div class="section level3">
 <h3 id="modular-workflow-build-your-own">Modular workflow (build your own)<a class="anchor" aria-label="anchor" href="#modular-workflow-build-your-own"></a>
 </h3>
 <ul>
-<li>Compose individual steps to suit your study design and QC needs.</li>
-<li>Typical sequence: filter missingness (<code><a href="reference/filter_by_missingness.html">filter_by_missingness()</a></code>), detect outliers (<code><a href="reference/remove_outliers.html">remove_outliers()</a></code>), impute (<code><a href="reference/hybrid_imputation.html">hybrid_imputation()</a></code>), and normalise (<code><a href="reference/normalise_SERRF_by_batch.html">normalise_SERRF_by_batch()</a></code>), with helpers such as <code><a href="reference/resolve_target_cols.html">resolve_target_cols()</a></code>.</li>
+<li>Compose individual steps to suit your study design. Typical sequence:
+<ul>
+<li>Filter by missingness with <a href="reference/filter_by_missingness.html"><code>filter_by_missingness()</code></a> (<a href="articles/data-filtering.html">vignette</a>)</li>
+<li>Detect outlier samples with <a href="reference/remove_outliers.html"><code>remove_outliers()</code></a> (<a href="articles/outlier-removal.html">vignette</a>)</li>
+<li>Impute with RF, LCMD, or both via <a href="reference/hybrid_imputation.html"><code>hybrid_imputation()</code></a> (<a href="articles/hybrid-imputation.html">vignette</a>)</li>
+<li>Normalise with SERRF using <a href="reference/normalise_SERRF.html"><code>normalise_SERRF()</code></a> (<a href="articles/serrf-normalisation.html">vignette</a>)</li>
+<li>Cluster features by RT or correlations using <a href="reference/cluster_features_by_retention_time.html"><code>cluster_features_by_retention_time()</code></a> (<a href="articles/feature-clustering.html">vignette</a>)</li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -87,9 +94,9 @@
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"farnudia/OmicsProcessing"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"IARCBiostat/OmicsProcessing"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">OmicsProcessing</span><span class="op">)</span></span></code></pre></div>
-<p>Run the semi-automated pipeline with your three input tables:</p>
+<p>Run the semi-automated pipeline with three input tables:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">processed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/process_data.html">process_data</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">data_features</span>,</span>
@@ -103,27 +110,68 @@
 <span>  outlier <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  plate_correction <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Or build your one analysis pipeline using teh follwoing modules:</p>
-<ol style="list-style-type: decimal">
-<li>Data filtering vignette: <a href="articles/data-filtering.html">Filtering missingness</a>
-</li>
-<li>Outlier removal vignette: <a href="articles/outlier-removal.html">PCA + LOF outlier detection</a>
-</li>
-<li>Log-transform vignette: <a href="articles/log-transformation.html">Log transformation (log1p)</a>
-</li>
-<li>Hybrid imputation vignette: <a href="articles/hybrid-imputation.html">Random Forest + LCMD</a>
-</li>
-<li>SERRF batch correction vignette: <a href="articles/serrf-normalisation.html">Batch correction using SERRF</a>
-</li>
-<li>Feature clustering vignette: <a href="articles/feature-clustering.html">Retention-time clustering</a>
-</li>
-</ol>
+<p>Or stitch together a modular workflow:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Load data</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu">read_csv</span><span class="op">(</span><span class="st">"path/to/data"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Filter by missingness</span></span>
+<span><span class="va">df_filtered</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/filter_by_missingness.html">filter_by_missingness</a></span><span class="op">(</span></span>
+<span>  <span class="va">df</span>,</span>
+<span>  row_thresh <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  col_thresh <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">df</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
+<span>  filter_order <span class="op">=</span> <span class="st">"iterative"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Detect outlier samples (PCA + LOF)</span></span>
+<span><span class="va">outliers</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/remove_outliers.html">remove_outliers</a></span><span class="op">(</span></span>
+<span>  <span class="va">df_filtered</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">df_filtered</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"pca-lof-overall"</span>,</span>
+<span>  impute_method <span class="op">=</span> <span class="st">"half-min-value"</span>,</span>
+<span>  restore_missing_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  return_ggplots <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">df_clean</span> <span class="op">&lt;-</span> <span class="va">outliers</span><span class="op">$</span><span class="va">df_filtered</span></span>
+<span></span>
+<span><span class="co"># Log-transform features</span></span>
+<span><span class="va">df_clean</span> <span class="op">&lt;-</span> <span class="va">df_clean</span> <span class="op"><a href="reference/pipe.html">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu">tidyselect</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">contains</a></span><span class="op">(</span><span class="st">"@"</span><span class="op">)</span>, <span class="va">log1p</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Impute missing values (RF + LCMD)</span></span>
+<span><span class="va">df_imputed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/hybrid_imputation.html">hybrid_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">df_clean</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"RF-LCMD"</span>,</span>
+<span>  oobe_threshold <span class="op">=</span> <span class="fl">0.1</span></span>
+<span><span class="op">)</span><span class="op">$</span><span class="va">hybrid_rf_lcmd</span></span>
+<span></span>
+<span><span class="co"># SERRF normalisation</span></span>
+<span><span class="va">df_normalised</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/normalise_SERRF.html">normalise_SERRF</a></span><span class="op">(</span></span>
+<span>  <span class="va">df_imputed</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">df_imputed</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
+<span>  strata_col <span class="op">=</span> <span class="st">"batch"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Cluster features by RT using correlations</span></span>
+<span><span class="va">clusters</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cluster_features_by_retention_time.html">cluster_features_by_retention_time</a></span><span class="op">(</span></span>
+<span>  df <span class="op">=</span> <span class="va">df_normalised</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  rt_height <span class="op">=</span> <span class="fl">0.07</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"correlations"</span>,</span>
+<span>  cut_height <span class="op">=</span> <span class="fl">0.26</span>,</span>
+<span>  corr_thresh <span class="op">=</span> <span class="fl">0.75</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="developers--contributors">Developers &amp; Contributors<a class="anchor" aria-label="anchor" href="#developers--contributors"></a>
 </h2>
-<p>We welcome contributions to <strong>OmicsProcessing</strong>! Our highest priority is <strong>clean code</strong> and <strong>good documentation</strong> — with emphasis on <em>good</em>.</p>
-<p>PLease follow these guidlines to contribute: <a href="articles/developer-guidelines.html">Developers &amp; Contributors</a></p>
+<p>We welcome contributions to <strong>OmicsProcessing</strong>. Our priorities are clean code and good documentation.</p>
+<p>Please follow these guidelines: <a href="articles/developer-guidelines.html">Developers &amp; Contributors</a></p>
 </div>
 <div class="section level2">
 <h2 id="resources">Resources<a class="anchor" aria-label="anchor" href="#resources"></a>

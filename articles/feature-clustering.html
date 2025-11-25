@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -155,9 +155,9 @@ integrated into each synthetic representative.</p>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_corr</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/cluster_features_by_retention_time.html">cluster_features_by_retention_time</a></span><span class="op">(</span></span>
-<span>  df <span class="op">=</span> <span class="va">imputed_df</span>,</span>
+<span>  df <span class="op">=</span> <span class="va">normalised_df</span>,</span>
 <span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
-<span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">imputed_df</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^sQC"</span>, <span class="va">normalised_df</span><span class="op">$</span><span class="va">sample_type</span><span class="op">)</span>,</span>
 <span>  rt_height <span class="op">=</span> <span class="fl">0.07</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"correlations"</span>,</span>
 <span>  cut_height <span class="op">=</span> <span class="fl">0.26</span>,</span>

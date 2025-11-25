@@ -1,6 +1,6 @@
 # Developers & Contributors
 
-## Developers & Contributors
+## Welcome
 
 We welcome contributions to **OmicsProcessing**! Our highest priority is
 **clean code** and **good documentation** — with emphasis on *good*.

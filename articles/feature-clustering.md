@@ -80,9 +80,9 @@ into each synthetic representative.
 
 ``` r
 res_corr <- OmicsProcessing::cluster_features_by_retention_time(
-  df = imputed_df,
+  df = normalised_df,
   target_cols = "@",
-  is_qc = grepl("^sQC", imputed_df$sample_type),
+  is_qc = grepl("^sQC", normalised_df$sample_type),
   rt_height = 0.07,
   method = "correlations",
   cut_height = 0.26,

@@ -6,7 +6,7 @@ Applies the SERRF normalization method to remove unwanted variation (Fan
 ## Usage
 
 ``` r
-normalise_SERRF_by_batch(
+normalise_SERRF(
   df,
   target_cols = NULL,
   is_qc = NULL,

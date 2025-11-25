@@ -42,7 +42,7 @@
   : Impute missing data in a data frame
 - [`impute_with_half_min()`](https://iarcbiostat.github.io/OmicsProcessing/reference/impute_with_half_min.md)
   : Impute Missing Values with Half the Minimum
-- [`normalise_SERRF_by_batch()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF_by_batch.md)
+- [`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.md)
   : SERRF Normalization
 - [`normalization_residualMixedModels()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalization_residualMixedModels.md)
   : Normalize feature Data Using Residual Mixed Models
