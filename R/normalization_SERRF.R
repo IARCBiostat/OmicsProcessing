@@ -10,7 +10,7 @@
 #'
 #' @return A normalized data frame.
 #' @export
-normalise_SERRF_by_batch <- function(df, target_cols = NULL, is_qc = NULL, strata_col, num_screen_SERRF = 10) {
+normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col, num_screen_SERRF = 10) {
     # ---- Validation ----
     if (missing(strata_col) || is.null(strata_col) || !nzchar(strata_col)) {
         stop("You must provide the name of the batch/strata column using the `strata_col` argument.")

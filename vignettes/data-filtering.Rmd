@@ -2,7 +2,7 @@
 title: "Data filtering with filter_by_missingness()"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Data filtering with filter_by_missingness}
+  %\VignetteIndexEntry{Data filtering with filter_by_missingness()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

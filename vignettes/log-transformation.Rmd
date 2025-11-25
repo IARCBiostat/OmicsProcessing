@@ -2,7 +2,7 @@
 title: "Log transformation with log1p()"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Log transformation with log1p}
+  %\VignetteIndexEntry{Log transformation with log1p()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

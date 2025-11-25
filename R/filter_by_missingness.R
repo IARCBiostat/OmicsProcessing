@@ -138,7 +138,7 @@ final_cols <- function(target_cols_kept, non_target_cols, all_names) {
 #' # 4  1  2  3 1
 #' # 5 NA NA NA 1
 #'
-#' For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
+#' # For this simple data set the "iteration" and the "col_then_row" filtering results are the same.
 #' @export
 filter_by_missingness <- function(df,
                                   row_thresh = 0.5,

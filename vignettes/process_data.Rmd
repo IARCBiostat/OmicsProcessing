@@ -2,7 +2,7 @@
 title: "Semi-automated pipeline with process_data()"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Semi-automated pipeline (process_data)}
+  %\VignetteIndexEntry{Semi-automated pipeline with process_data()}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -182,7 +182,7 @@ multiplying all feature values for ID_10 by 1.5:
 # returning a list of data, outlier plot, and exclusion IDs
 ```
 
-![](inst/outlier-example.png)
+![PCA + LOF outlier example](outlier-example.png)
 
 ### Plate correction
 
