@@ -21,7 +21,7 @@ normalise_SERRF(
 
 \item{strata_col}{Name of the column containing batch/strata IDs. If \code{NULL}, a dummy
 single-level strata is created so all samples are treated as one batch. When
-provided, the column must exist in \code{df} and be a factor with no NA values.}
+provided, the column must exist in \code{df} with no NA values.}
 
 \item{num_screen_SERRF}{Number of correlated features to use in model fitting. Default is 10.}
 }
