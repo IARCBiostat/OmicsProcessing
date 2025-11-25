@@ -12,15 +12,20 @@ Pre-analysis processing for omics data (metabolomics, proteomics), covering miss
 
 ### Modular workflow (build your own)
 
-- Compose individual steps to suit your study design and QC needs.
-- Typical sequence: filter missingness (`filter_by_missingness()`), detect outliers (`remove_outliers()`), impute (`hybrid_imputation()`), and normalise (`normalise_SERRF_by_batch()`), with helpers such as `resolve_target_cols()`.
+- Compose individual steps to suit your study design.
+- Typical sequence: 
+  - Filter data by missingness using [filter_by_missingness()](../reference/filter_by_missingness.html) [link to Filtering missingness vignette](articles/data-filtering.html)
+  - Detect outlier samples using LOF [`remove_outliers()`](../reference/remove_outliers.html) [link to PCA + LOF outlier detection](articles/outlier-removal.html), 
+  - Impute missing values using random forest (RF), the left-censored missing data (LCMD), or both [`hybrid_imputation()`](../reference/hybrid_imputation.html) [link to RF, LCMD, and hybrid imputation vignette](articles/hybrid-imputation.html), 
+  - Normalise data with Systematical Error Removal using Random Forest (SERRF) using QC samples for the different strata [`normalise_SERRF()`](../reference/normalise_SERRF.html) [link to Batch correction using SERRF vignette](articles/serrf-normalisation.html), 
+  - cluster features by retention time (RT) using custom scores or by their correlations [`cluster_features_by_retention_time()`](../reference/cluster_features_by_retention_time.html), [link to Retention-time clustering vignette](articles/feature-clustering.html).
 
 
 ## Quick start
 
 ```r
 # install.packages("remotes")
-remotes::install_github("farnudia/OmicsProcessing")
+remotes::install_github("IARCBiostat/OmicsProcessing")
 library(OmicsProcessing)
 ```
 
@@ -41,15 +46,70 @@ processed <- process_data(
 )
 ```
 
-Or build your one analysis pipeline using teh follwoing modules:
+Or have a look at this workflow that filters data by missingness, removes outlier samples, log-transforms the data, imputes, normalises the data, and finally clusters the features
 
-1) Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
-2) Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
-3) Log-transform vignette: [Log transformation (log1p)](articles/log-transformation.html)
-4) Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
-5) SERRF batch correction vignette: [Batch correction using SERRF](articles/serrf-normalisation.html)
-6) Feature clustering vignette: [Retention-time clustering](articles/feature-clustering.html)
+```r
+df <- readr::read_csv("path/to/data")
 
+filtered_df <- OmicsProcessing::filter_by_missingness(
+  df,
+  row_thresh = 0.5, # Remove features with >50% missingness
+  col_thresh = 0.5, # Remove samples with >50% missingness
+  target_cols = "@", # Automatically detect feature columns that have "@" in it
+  is_qc = grepl("^sQC", df$sample_type), # Identify QC samples
+  filter_order = "iterative" # Default: iterative filtering
+)
+
+
+outlier_results <- OmicsProcessing::remove_outliers(
+    filtered_df,
+    target_cols = "@",
+    is_qc = grepl("^sQC", filtered_df$sample_type),
+    method = "pca-lof-overall",
+    impute_method = "half-min-value",
+    restore_missing_values = TRUE,
+    return_ggplots = FALSE
+  )
+clean_df <- outlier_results$df_filtered
+
+
+clean_df <- clean_df %>%
+    dplyr::mutate(dplyr::across(
+      .cols = tidyselect::all_of(feature_cols),
+      .fns = ~ log1p(.x),
+      .names = "{.col}"
+    ))
+
+
+imputed_results <- OmicsProcessing::hybrid_imputation(
+    clean_df,
+    target_cols = "@",
+    method = c("RF-LCMD"),
+    oobe_threshold = 0.1
+  )
+imputed_df <- imputed_results$hybrid_rf_lcmd
+
+normalised_df <- OmicsProcessing::normalise_SERRF(
+    imputed_df,
+    target_cols = "@",
+    is_qc = grepl("^sQC", imputed_df$sample_type),
+    strata_col = "batch"
+  )
+
+
+
+res_corr <- OmicsProcessing::cluster_features_by_retention_time(
+  df = normalised_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", normalised_df$sample_type),
+  rt_height = 0.07,
+  method = "correlations",
+  cut_height = 0.26,
+  corr_thresh = 0.75
+)
+
+clustered_df_corr <- res_corr$clustered_df   
+```
 
 ## Developers & Contributors
 
