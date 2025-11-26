@@ -149,8 +149,6 @@ Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-g
   clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.md)
 - Developers & contributors: [Developer
   guide](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.md)
-- Modular workflow deep dive: [README
-  section](https://github.com/farnudia/OmicsProcessing#modular-workflow)
 
 # Package index
 
