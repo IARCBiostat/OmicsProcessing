@@ -74,34 +74,42 @@
 <h2 id="cluster-features-by-retention-time">Cluster features by retention time<a class="anchor" aria-label="anchor" href="#cluster-features-by-retention-time"></a>
 </h2>
 <p><code><a href="../reference/cluster_features_by_retention_time.html">cluster_features_by_retention_time()</a></code> groups features
-that elute together based on similar retention time (RT) and returns a
-data frame that <strong>keeps unclustered features untouched</strong>
-plus <strong>one representative per RT cluster</strong>. Use the
-<code>representatives_map</code> to see which raw features each
-representative stands in for. See <a href="../reference/cluster_features_by_retention_time.html"><code>cluster_features_by_retention_time()</code></a>.</p>
+that elute together, based on similar retention times (RTs). It returns
+a data frame that includes all unclustered features
+<strong>unchanged</strong>, plus <strong>one representative per
+cluster</strong>. The <code>representatives_map</code> output shows
+which original features each representative corresponds to. See the
+function reference for further details: <a href="../reference/cluster_features_by_retention_time.html"><code>cluster_features_by_retention_time()</code></a>.</p>
 <blockquote>
 <p><strong>Prerequisites:</strong> use <strong>imputed and
-normalised</strong> data before this step—RT clustering assumes no
-missing values and benefits from stabilised intensities.</p>
+normalised</strong> data before applying RT clustering. This procedure
+assumes no missing values and benefits from stabilised intensity
+profiles.</p>
 </blockquote>
-<p>In this context is_qc variable will not apply this algorithm to the
-rows/samples flagged by is_qc. Normally we wish to assign is_qc as NULL
-so that all rows contribute to the clustering.</p>
+<p>The <code>is_qc</code> argument prevents QC-designated rows from
+contributing to the clustering. Typically, <code>is_qc</code> should be
+set to <code>NULL</code> so that all samples contribute.</p>
 <div class="section level3">
-<h3 id="how-representatives-are-chosen-with-scores">How representatives are chosen with scores<a class="anchor" aria-label="anchor" href="#how-representatives-are-chosen-with-scores"></a>
+<h3 id="how-representatives-are-selected-with-the-scores-method">How representatives are selected with the “scores” method<a class="anchor" aria-label="anchor" href="#how-representatives-are-selected-with-the-scores-method"></a>
 </h3>
-<p><a href="../reference/get_features_representatives_based_on_scores.html"><code>get_features_representatives_based_on_scores()</code></a>
-selects <strong>one feature per cluster</strong>:</p>
+<p>The “scores” method clusters features by RT and returns <strong>one
+representative per RT cluster</strong> based on the input score. It
+employs <a href="../reference/get_features_representatives_based_on_scores.html"><code>get_features_representatives_based_on_scores()</code></a>.
+This helper is called internally by
+<code><a href="../reference/cluster_features_by_retention_time.html">cluster_features_by_retention_time()</a></code>; you do not need to
+invoke it explicitly.</p>
+<p>For each RT-based cluster:</p>
 <ul>
-<li>Single-feature clusters: the lone feature is returned.</li>
+<li>Single-feature clusters: the feature is returned unchanged.</li>
 <li>Multi-feature clusters: the feature with the <strong>highest
-score</strong> is returned; <code>representatives_map</code> records all
-members it represents.</li>
+score</strong> is selected as the representative, and
+<code>representatives_map</code> records all members that it
+represents.</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="example-1-score-based-representatives-mean-intensity-pre-normalisation">Example 1: Score-based representatives (mean intensity
-pre-normalisation)<a class="anchor" aria-label="anchor" href="#example-1-score-based-representatives-mean-intensity-pre-normalisation"></a>
+<h3 id="example-1-score-based-representatives-mean-intensity-before-normalisation">Example 1: Score-based representatives (mean intensity before
+normalisation)<a class="anchor" aria-label="anchor" href="#example-1-score-based-representatives-mean-intensity-before-normalisation"></a>
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Assume `imputed_df` is your imputed, SERRF-normalised data</span></span>
@@ -117,38 +125,43 @@ pre-normalisation)<a class="anchor" aria-label="anchor" href="#example-1-score-b
 <span>  scores <span class="op">=</span> <span class="va">scores</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">clustered_df</span> <span class="op">&lt;-</span> <span class="va">res_scores</span><span class="op">$</span><span class="va">clustered_df</span>          <span class="co"># keeps untouched features + representatives</span></span>
-<span><span class="va">rep_map</span> <span class="op">&lt;-</span> <span class="va">res_scores</span><span class="op">$</span><span class="va">representatives_map</span>        <span class="co"># which raw features each rep stands for</span></span></code></pre></div>
-<p>Here <code>rt_height</code> sets the maximum RT spread of a
-cluster—features whose RTs differ by less than <code>rt_height</code>
-are grouped. Within each cluster, the scores you supply are inspected
-and the feature with the <strong>largest score</strong> becomes the
-representative. If scores are pre-normalisation mean intensities, each
-cluster’s representative is simply the feature with the highest average
-intensity. <code>representatives_map</code> uses representative names as
-list names and stores the vector of feature names each rep stands
-for.</p>
+<span><span class="va">clustered_df</span> <span class="op">&lt;-</span> <span class="va">res_scores</span><span class="op">$</span><span class="va">clustered_df</span>     <span class="co"># original features + representatives</span></span>
+<span><span class="va">rep_map</span> <span class="op">&lt;-</span> <span class="va">res_scores</span><span class="op">$</span><span class="va">representatives_map</span>   <span class="co"># mapping of representatives to raw features</span></span></code></pre></div>
+<p>The <code>rt_height</code> parameter defines the maximum RT span for
+forming a cluster: features whose RTs differ by less than this value are
+grouped. Within each cluster, the supplied <code>scores</code> determine
+the representative. In this example, pre-normalisation mean intensities
+serve as scores; consequently, each representative is the feature with
+the highest mean intensity before normalisation. The
+<code>representatives_map</code> lists representatives as names, with
+vectors of raw feature names as their values.</p>
 </div>
 <div class="section level3">
-<h3 id="how-representatives-are-chosen-with-correlations">How representatives are chosen with correlations<a class="anchor" aria-label="anchor" href="#how-representatives-are-chosen-with-correlations"></a>
+<h3 id="how-representatives-are-selected-with-the-correlation-method">How representatives are selected with the correlation method<a class="anchor" aria-label="anchor" href="#how-representatives-are-selected-with-the-correlation-method"></a>
 </h3>
-<p>Within each RT cluster (features whose max RT difference is below
-<code>rt_height</code>),
-<code><a href="../reference/cluster_features_based_on_correlations.html">cluster_features_based_on_correlations()</a></code> adds a
-correlation-driven layer:</p>
+<p>With <code>method = "correlations"</code>, the features are first
+grouped together by the <code>rt_height</code> (like the scores method).
+Then, a secondary correlation-based clustering step is applied within
+each RT-defined group. Clustering behaviour is governed by
+<code>corr_thresh</code> and <code>cut_height</code>:</p>
 <ul>
-<li>Features are split/merged based on <code>cut_height</code>
-(multi-feature groups) or <code>corr_thresh</code> (pairs).</li>
-<li>Groups of size 1: kept as-is.</li>
-<li>Groups of size 2: if <code>|corr| &gt;= corr_thresh</code>, collapse
-to a synthetic PC1 feature; otherwise keep both originals.</li>
-<li>Groups of size ≥3: hierarchical clustering (ClustOfVar) is cut at
-<code>cut_height</code>; each sub-cluster is summarised by a synthetic
-PC1 aligned to the first feature.</li>
+<li><p>RT cluster of size 1: retained unchanged.</p></li>
+<li>
+<p>RT cluster of size 2:</p>
+<ul>
+<li>If <code>|corr| ≥ corr_thresh</code>, the pair is summarised as a
+synthetic PC1 feature.</li>
+<li>Otherwise, both features are retained.</li>
 </ul>
-<p>The returned <code>representatives_map</code> uses synthetic feature
-names as list names and stores the vector of raw feature names that were
-integrated into each synthetic representative.</p>
+</li>
+<li><p>RT cluster of size ≥3: hierarchical clustering (ClustOfVar) is
+cut at <code>cut_height</code>, and each resulting sub-cluster is
+summarised as a synthetic PC1, aligned to the first feature in that
+sub-cluster.</p></li>
+</ul>
+<p>In all cases, the <code>representatives_map</code> lists synthetic
+feature names and records the raw features incorporated into each
+synthetic representative.</p>
 </div>
 <div class="section level3">
 <h3 id="example-2-correlation-based-summarisation-within-rt-clusters">Example 2: Correlation-based summarisation within RT clusters<a class="anchor" aria-label="anchor" href="#example-2-correlation-based-summarisation-within-rt-clusters"></a>
@@ -164,26 +177,25 @@ integrated into each synthetic representative.</p>
 <span>  corr_thresh <span class="op">=</span> <span class="fl">0.75</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">clustered_df_corr</span> <span class="op">&lt;-</span> <span class="va">res_corr</span><span class="op">$</span><span class="va">clustered_df</span>       <span class="co"># includes synthetic reps if correlations split clusters</span></span>
+<span><span class="va">clustered_df_corr</span> <span class="op">&lt;-</span> <span class="va">res_corr</span><span class="op">$</span><span class="va">clustered_df</span></span>
 <span><span class="va">rep_map_corr</span> <span class="op">&lt;-</span> <span class="va">res_corr</span><span class="op">$</span><span class="va">representatives_map</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="tips">Tips<a class="anchor" aria-label="anchor" href="#tips"></a>
 </h3>
 <ul>
-<li>Choose <code>rt_height</code> to match instrument RT precision;
-smaller height yields more (tighter) clusters.</li>
-<li>With <code>"scores"</code>, ensure <code>scores</code> is a
+<li>Set <code>rt_height</code> to reflect the instrument’s RT precision;
+smaller values produce more, and tighter, RT clusters.</li>
+<li>For <code>"scores"</code>, ensure that <code>scores</code> is a
 <strong>named numeric vector</strong> aligned with
-<code>target_cols</code>; using pre-normalisation means is a simple,
-fast heuristic.</li>
-<li>With <code>"correlations"</code>, adjust
-<code>cut_height</code>/<code>corr_thresh</code> to control how
-aggressively correlated features are merged into a synthetic
-representative.</li>
-<li>Inspect <code>representatives_map</code> to trace each
-representative back to its source features for reporting or sensitivity
-checks.</li>
+<code>target_cols</code>. Using pre-normalisation means is a simple and
+efficient strategy.</li>
+<li>For <code>"correlations"</code>, tune <code>cut_height</code> and
+<code>corr_thresh</code> to adjust the merging stringency for correlated
+features.</li>
+<li>Always inspect the <code>representatives_map</code> to understand
+how each representative relates to original features, particularly for
+reporting, audit trails, or sensitivity analyses.</li>
 </ul>
 </div>
 </div>
