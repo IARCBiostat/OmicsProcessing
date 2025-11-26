@@ -120,4 +120,3 @@ Please follow these guidelines: [Developers & Contributors](articles/developer-g
 - SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
 - Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
 - Developers & contributors: [Developer guide](articles/developer-guidelines.html)
-- Modular workflow deep dive: [README section](https://github.com/farnudia/OmicsProcessing#modular-workflow)

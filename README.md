@@ -8,16 +8,16 @@ Pre-analysis processing for metabolomics and proteomics: missingness filtering, 
 
 - End-to-end wrapper that can filter on missingness, impute, transform, remove outliers (PCA + LOF), handle matched case-control designs, correct for plate/batch effects, and centre/scale.
 - Takes three data frames (feature data, feature metadata, sample metadata) and returns processed data plus exclusion IDs and PCA/LOF plots.
-- Full walk-through: [Semi-automated pipeline](articles/process_data.html).
+- Full walk-through: [Semi-automated pipeline](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html).
 
 ### Modular workflow (build your own)
 
 - Compose individual steps to suit your study design. Typical sequence:
-  - Filter by missingness with [`filter_by_missingness()`](reference/filter_by_missingness.html) ([vignette](articles/data-filtering.html))
-  - Detect outlier samples with [`remove_outliers()`](reference/remove_outliers.html) ([vignette](articles/outlier-removal.html))
-  - Impute with RF, LCMD, or both via [`hybrid_imputation()`](reference/hybrid_imputation.html) ([vignette](articles/hybrid-imputation.html))
-  - Normalise with SERRF using [`normalise_SERRF()`](reference/normalise_SERRF.html) ([vignette](articles/serrf-normalisation.html))
-  - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](reference/cluster_features_by_retention_time.html) ([vignette](articles/feature-clustering.html))
+  - Filter by missingness with [`filter_by_missingness()`](https://iarcbiostat.github.io/OmicsProcessing/reference/filter_by_missingness.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.html))
+  - Detect outlier samples with [`remove_outliers()`](https://iarcbiostat.github.io/OmicsProcessing/reference/remove_outliers.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html))
+  - Impute with RF, LCMD, or both via [`hybrid_imputation()`](https://iarcbiostat.github.io/OmicsProcessing/reference/hybrid_imputation.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.html))
+  - Normalise with SERRF using [`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html))
+  - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.html))
 
 ## Quick start
 
@@ -107,17 +107,16 @@ clusters <- cluster_features_by_retention_time(
 
 We welcome contributions to **OmicsProcessing**. Our priorities are clean code and good documentation.
 
-Please follow these guidelines: [Developers & Contributors](articles/developer-guidelines.html)
+Please follow these guidelines: [Developers & Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.html)
 
 ## Resources
 
-- Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
-- Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
-- Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
-- Function reference index: [All functions](reference/index.html)
-- Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
-- Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
-- SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
-- Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
-- Developers & contributors: [Developer guide](articles/developer-guidelines.html)
-- Modular workflow deep dive: [README section](https://github.com/farnudia/OmicsProcessing#modular-workflow)
+- Data filtering vignette: [Filtering missingness](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.html)
+- Outlier removal vignette: [PCA + LOF outlier detection](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html)
+- Hybrid imputation vignette: [Random Forest + LCMD](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.html)
+- Function reference index: [All functions](https://iarcbiostat.github.io/OmicsProcessing/reference/index.html)
+- Semi-automated pipeline details: [Semi-automated pipeline vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html)
+- Log-transform features: [Log transformation (log1p)](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.html)
+- SERRF batch correction: [Batch correction using SERRF](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html)
+- Feature clustering: [Retention-time clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.html)
+- Developers & contributors: [Developer guide](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.html)
