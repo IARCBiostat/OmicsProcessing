@@ -103,8 +103,9 @@ processed using correlation-based summarisation.</p></dd>
 <dt id="arg-scores">scores<a class="anchor" aria-label="anchor" href="#arg-scores"></a></dt>
 <dd><p>Named numeric vector of feature scores, required when
 <code>method = "scores"</code>. Names must coincide with <code>target_cols</code>.
-For each retention-time cluster, the feature with the largest score is
-chosen as representative.</p></dd>
+For each retention-time cluster, the feature  are subclusterd based on the
+input correlation threshold. The feature with the highest score is selected
+as the representative of each subcluster.</p></dd>
 
 
 <dt id="arg-cut-height">cut_height<a class="anchor" aria-label="anchor" href="#arg-cut-height"></a></dt>

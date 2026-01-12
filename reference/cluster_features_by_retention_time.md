@@ -56,8 +56,9 @@ cluster_features_by_retention_time(
 
   Named numeric vector of feature scores, required when
   `method = "scores"`. Names must coincide with `target_cols`. For each
-  retention-time cluster, the feature with the largest score is chosen
-  as representative.
+  retention-time cluster, the feature are subclusterd based on the input
+  correlation threshold. The feature with the highest score is selected
+  as the representative of each subcluster.
 
 - cut_height:
 

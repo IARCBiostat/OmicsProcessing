@@ -35,7 +35,8 @@
 - [`generate_labels()`](https://iarcbiostat.github.io/OmicsProcessing/reference/generate_labels.md)
   : generate labels
 - [`get_features_representatives_based_on_scores()`](https://iarcbiostat.github.io/OmicsProcessing/reference/get_features_representatives_based_on_scores.md)
-  : Select representative features per cluster based on scores
+  : Select representative features per cluster using correlation
+  threshold and scores
 - [`hybrid_imputation()`](https://iarcbiostat.github.io/OmicsProcessing/reference/hybrid_imputation.md)
   : Hybrid Imputation: Random Forest + LCMD
 - [`impute_data()`](https://iarcbiostat.github.io/OmicsProcessing/reference/impute_data.md)
