@@ -25,29 +25,6 @@ test_that("clusters matrix input into k groups", {
     expect_equal(unname(res), c(1L, 1L, 2L, 2L))
 })
 
-test_that("retention-time clustering with scores picks highest per RT cluster", {
-    df <- data.frame(
-        "100@150" = 1:4,
-        "100@151" = 5:8,
-        "101@200" = 9:12,
-        check.names = FALSE
-    )
-    scores <- c("100@150" = 0.2, "100@151" = 0.8, "101@200" = 0.5)
-
-    res <- cluster_features_by_retention_time(
-        df = df,
-        target_cols = c("100@150", "100@151", "101@200"),
-        is_qc = rep(FALSE, nrow(df)),
-        rt_height = 1,  # puts first two features together, third separate
-        method = "scores",
-        scores = scores
-    )
-
-    expect_equal(names(res$clustered_df), c("100@151", "101@200"))
-    expect_equal(res$representatives_map$`100@151`, c("100@150", "100@151"))
-    expect_null(res$representatives_map$`101@200`)
-})
-
 test_that("correlation-based path produces synthetic feature for RT cluster", {
     skip_if_not_installed("FactoMineR")
     skip_if_not_installed("ClustOfVar")

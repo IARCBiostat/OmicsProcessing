@@ -27,8 +27,9 @@
 #' @param scores
 #'   Named numeric vector of feature scores, required when
 #'   \code{method = "scores"}. Names must coincide with \code{target_cols}.
-#'   For each retention-time cluster, the feature with the largest score is
-#'   chosen as representative.
+#'   For each retention-time cluster, the feature  are subclusterd based on the 
+#'   input correlation threshold. The feature with the highest score is selected 
+#'   as the representative of each subcluster.
 #' @param cut_height
 #'   Numeric height used inside \code{cluster_features_based_on_correlations}
 #'   when \code{method = "correlations"}. Passed on to that function's
@@ -184,7 +185,9 @@ cluster_features_by_retention_time <- function(
 
   if (method == "scores") {
     representatives <- get_features_representatives_based_on_scores(
+      df,
       cluster_feature_list,
+      corr_thresh = corr_thresh,
       scores
     )
     clustered_df <- df[, representatives$representatives]
@@ -334,46 +337,91 @@ parse_mass_rt <- function(x,
 
 
 
-#' Select representative features per cluster based on scores
+
+#' Select representative features per cluster using correlation threshold and scores
 #'
-#' For each cluster, this function selects a single representative feature.
-#' If a cluster contains one feature, that feature is selected. If it contains
-#' multiple features, the feature with the highest score in \code{scores} is
-#' selected.
+#' This function selects representative features from pre-defined clusters of
+#' variables, using a correlation-based rule and a scoring vector:
 #'
-#' The function also returns a named list mapping each representative feature
-#' to all cluster members it represents.
+#' \itemize{
+#'   \item If a cluster contains a single feature, that feature is selected.
+#'   \item If a cluster contains two features, the absolute pairwise correlation
+#'         is computed. If \code{|cor| >= corr_thresh}, only the highest-scoring
+#'         feature is selected; otherwise, both features are kept as representatives.
+#'   \item If a cluster contains more than two features, hierarchical clustering
+#'         is performed using the distance \code{1 - |cor|} with
+#'         \code{method = "average"}. The dendrogram is cut at
+#'         \code{h = 1 - corr_thresh} to form subclusters. From each subcluster,
+#'         the highest-scoring feature is selected as the representative.
+#' }
+#'
+#' In all cases where a unique representative is chosen for a (sub)cluster,
+#' \code{representatives_map} stores the mapping from the representative feature
+#' to the set of original features it represents.
+#'
+#' @param df
+#'   A data frame containing the feature columns referenced in
+#'   \code{cluster_feature_list}. Column names must match the feature names.
 #'
 #' @param cluster_feature_list
-#'   A list where each element is a character vector of feature names
-#'   belonging to one cluster. Each element must be a non-empty character
-#'   vector.
+#'   A list where each element is a non-empty character vector of feature names
+#'   belonging to one cluster (e.g., the output of a prior clustering step).
+#'
+#' @param corr_thresh
+#'   A numeric threshold in \code{[0, 1]}. For two-feature clusters, if
+#'   \code{|cor| >= corr_thresh}, the feature with the highest score is selected.
+#'   For clusters with more than two features, subclusters are created by cutting
+#'   the hierarchical tree at \code{h = 1 - corr_thresh}.
+#'
 #' @param scores
-#'   A named numeric vector where names correspond to feature names and
-#'   values represent feature scores. All features appearing in
+#'   A named numeric vector of feature scores. All features appearing in
 #'   \code{cluster_feature_list} must be present in \code{names(scores)}.
 #'
 #' @return
-#'   A list with two elements:
-#'
+#'   A list with two components:
 #'   \describe{
 #'     \item{\code{representatives}}{
-#'       A character vector giving one selected representative feature
-#'       per cluster.
+#'       A character vector of selected representative features (one per
+#'       single-feature cluster; zero, one, or more per multi-feature cluster,
+#'       depending on the correlation structure and threshold).
 #'     }
 #'     \item{\code{representatives_map}}{
-#'       A named list mapping each representative feature to the vector
-#'       of original features in its cluster.
+#'       A named list mapping each representative feature (when uniquely chosen)
+#'       to the character vector of features it represents.
 #'     }
 #'   }
 #'
+#' @details
+#'   For clusters of size greater than two, the distance matrix is computed as
+#'   \code{1 - abs(cor(X))} on the selected columns, followed by
+#'   \code{hclust(..., method = "average")}. Subclusters are extracted via
+#'   \code{cutree(hc, h = 1 - corr_thresh)}. Within each subcluster, the
+#'   representative is the feature with the maximum score.
+#'
+#'   When a two-feature cluster has \code{|cor| < corr_thresh}, both features
+#'   are returned as representatives and no mapping is stored for that pair,
+#'   as neither represents the other by design.
+#'
 #' @examples
-#' cluster_feature_list <- list(
-#'   c("feat_a", "feat_b", "feat_c"),
-#'   "feat_d",
-#'   c("feat_e", "feat_f")
+#' # Toy data frame
+#' set.seed(1)
+#' df <- data.frame(
+#'   feat_a = rnorm(100),
+#'   feat_b = rnorm(100),
+#'   feat_c = rnorm(100),
+#'   feat_d = rnorm(100),
+#'   feat_e = rnorm(100),
+#'   feat_f = rnorm(100)
 #' )
 #'
+#' # Example clusters
+#' cluster_feature_list <- list(
+#'   c("feat_a", "feat_b", "feat_c"), # size > 2 -> hierarchical subclusters
+#'   "feat_d", # size = 1 -> itself
+#'   c("feat_e", "feat_f") # size = 2 -> pairwise rule
+#' )
+#'
+#' # Scores for all features
 #' scores <- c(
 #'   feat_a = 0.1,
 #'   feat_b = 0.4,
@@ -383,8 +431,13 @@ parse_mass_rt <- function(x,
 #'   feat_f = 0.8
 #' )
 #'
+#' # Choose a correlation threshold
+#' corr_thresh <- 0.7
+#'
 #' res <- get_features_representatives_based_on_scores(
+#'   df = df,
 #'   cluster_feature_list = cluster_feature_list,
+#'   corr_thresh = corr_thresh,
 #'   scores = scores
 #' )
 #'
@@ -393,7 +446,9 @@ parse_mass_rt <- function(x,
 #'
 #' @export
 get_features_representatives_based_on_scores <- function(
+    df,
     cluster_feature_list,
+    corr_thresh,
     scores) {
   if (!is.list(cluster_feature_list)) {
     stop("`cluster_feature_list` must be a list.")
@@ -402,9 +457,11 @@ get_features_representatives_based_on_scores <- function(
   if (is.null(names(scores))) {
     stop("`scores` must be a named numeric vector.")
   }
+  if (!is.numeric(corr_thresh) || length(corr_thresh) != 1L || is.na(corr_thresh) || corr_thresh < 0 || corr_thresh > 1) {
+    stop("`corr_thresh` must be a single numeric value in [0, 1].")
+  }
 
-  n_clusters <- length(cluster_feature_list)
-  representatives <- character(n_clusters)
+  representatives <- c()
   representatives_map <- vector("list")
 
   for (i in seq_along(cluster_feature_list)) {
@@ -428,16 +485,47 @@ get_features_representatives_based_on_scores <- function(
 
     if (length(cluster) == 1L) {
       rep_feature <- cluster[1L]
+      representatives <- c(representatives, rep_feature)
+    } else if (length(cluster) == 2L) {
+      feature_df <- df %>%
+        dplyr::select(dplyr::all_of(cluster))
+
+      pair_cor <- stats::cor(feature_df)[1, 2]
+
+      if (pair_cor >= corr_thresh) {
+        cluster_scores <- scores[cluster]
+        max_idx <- which.max(cluster_scores)
+        rep_feature <- cluster[max_idx]
+        representatives <- c(representatives, rep_feature)
+        representatives_map[[rep_feature]] <- cluster
+      } else {
+        representatives <- c(representatives, cluster)
+      }
     } else {
-      cluster_scores <- scores[cluster]
-      max_idx <- which.max(cluster_scores)
-      rep_feature <- cluster[max_idx]
-      representatives_map[[rep_feature]] <- cluster
+      feature_matrix <- df %>%
+        dplyr::select(dplyr::all_of(cluster)) %>%
+        as.matrix()
+
+      dist_mat <- as.dist(1 - abs(cor(feature_matrix)))
+      hc <- hclust(dist_mat, method = "average")
+      subclusters <- cutree(hc, h = 1 - corr_thresh)
+      cluster_list <- split(names(subclusters), subclusters)
+
+      for (j in seq_along(cluster_list)) {
+        cluster_j <- cluster_list[[j]]
+        if (length(cluster_j) == 1L) {
+          rep_feature <- cluster_j[1L]
+          representatives <- c(representatives, rep_feature)
+        } else {
+          cluster_scores <- scores[cluster_j]
+          max_idx <- which.max(cluster_scores)
+          rep_feature <- cluster_j[max_idx]
+          representatives <- c(representatives, rep_feature)
+          representatives_map[[rep_feature]] <- cluster_j
+        }
+      }
     }
-
-    representatives[i] <- rep_feature
   }
-
   list(
     representatives = representatives,
     representatives_map = representatives_map
@@ -525,8 +613,8 @@ get_features_representatives_based_on_scores <- function(
 #'
 #' # Pre-defined feature groups (e.g. after a retention-time grouping step)
 #' cluster_feature_list <- list(
-#'   c("100@150", "100@151"),  # group of size 2
-#'   "101@200"                 # group of size 1
+#'   c("100@150", "100@151"), # group of size 2
+#'   "101@200" # group of size 1
 #' )
 #'
 #' res <- cluster_features_based_on_correlations(

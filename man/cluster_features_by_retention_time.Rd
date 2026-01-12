@@ -38,8 +38,9 @@ processed using correlation-based summarisation.}
 
 \item{scores}{Named numeric vector of feature scores, required when
 \code{method = "scores"}. Names must coincide with \code{target_cols}.
-For each retention-time cluster, the feature with the largest score is
-chosen as representative.}
+For each retention-time cluster, the feature  are subclusterd based on the
+input correlation threshold. The feature with the highest score is selected
+as the representative of each subcluster.}
 
 \item{cut_height}{Numeric height used inside \code{cluster_features_based_on_correlations}
 when \code{method = "correlations"}. Passed on to that function's
