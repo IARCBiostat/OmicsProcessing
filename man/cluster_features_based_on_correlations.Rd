@@ -88,8 +88,8 @@ data_tbl <- tibble::tibble(
 
 # Pre-defined feature groups (e.g. after a retention-time grouping step)
 cluster_feature_list <- list(
-  c("100@150", "100@151"),  # group of size 2
-  "101@200"                 # group of size 1
+  c("100@150", "100@151"), # group of size 2
+  "101@200" # group of size 1
 )
 
 res <- cluster_features_based_on_correlations(
