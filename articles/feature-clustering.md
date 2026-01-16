@@ -48,6 +48,7 @@ res_scores <- OmicsProcessing::cluster_features_by_retention_time(
   target_cols = target_cols,
   rt_height = 0.07,
   method = "scores",
+  corr_thresh = 0.75,
   scores = scores
 )
 
@@ -57,12 +58,19 @@ rep_map <- res_scores$representatives_map   # mapping of representatives to raw 
 
 The `rt_height` parameter defines the maximum RT span for forming a
 cluster: features whose RTs differ by less than this value are grouped.
-Within each cluster, the supplied `scores` determine the representative.
-In this example, pre-normalisation mean intensities serve as scores;
-consequently, each representative is the feature with the highest mean
-intensity before normalisation. The `representatives_map` lists
-representatives as names, with vectors of raw feature names as their
-values.
+Within each RT‑based group, pairwise correlations between features are
+calculated, and the features are further partitioned into
+correlation‑based subclusters. The supplied `scores` determine the
+representative feature for each subcluster. In this example,
+pre-normalisation mean intensities serve as scores; consequently, each
+representative is the feature with the highest mean intensity before
+normalisation.
+
+The `representatives_map` lists representatives as names, with vectors
+of raw feature names as their values. In effect, features with similar
+retention times are identified, and among those with high correlation,
+the feature with the highest pre‑normalisation mean intensity is
+selected as the representative.
 
 ### How representatives are selected with the correlation method
 

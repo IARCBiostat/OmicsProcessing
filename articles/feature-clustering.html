@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,6 +122,7 @@ normalisation)<a class="anchor" aria-label="anchor" href="#example-1-score-based
 <span>  target_cols <span class="op">=</span> <span class="va">target_cols</span>,</span>
 <span>  rt_height <span class="op">=</span> <span class="fl">0.07</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"scores"</span>,</span>
+<span>  corr_thresh <span class="op">=</span> <span class="fl">0.75</span>,</span>
 <span>  scores <span class="op">=</span> <span class="va">scores</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -129,12 +130,18 @@ normalisation)<a class="anchor" aria-label="anchor" href="#example-1-score-based
 <span><span class="va">rep_map</span> <span class="op">&lt;-</span> <span class="va">res_scores</span><span class="op">$</span><span class="va">representatives_map</span>   <span class="co"># mapping of representatives to raw features</span></span></code></pre></div>
 <p>The <code>rt_height</code> parameter defines the maximum RT span for
 forming a cluster: features whose RTs differ by less than this value are
-grouped. Within each cluster, the supplied <code>scores</code> determine
-the representative. In this example, pre-normalisation mean intensities
-serve as scores; consequently, each representative is the feature with
-the highest mean intensity before normalisation. The
-<code>representatives_map</code> lists representatives as names, with
-vectors of raw feature names as their values.</p>
+grouped. Within each RT‑based group, pairwise correlations between
+features are calculated, and the features are further partitioned into
+correlation‑based subclusters. The supplied <code>scores</code>
+determine the representative feature for each subcluster. In this
+example, pre-normalisation mean intensities serve as scores;
+consequently, each representative is the feature with the highest mean
+intensity before normalisation.</p>
+<p>The <code>representatives_map</code> lists representatives as names,
+with vectors of raw feature names as their values. In effect, features
+with similar retention times are identified, and among those with high
+correlation, the feature with the highest pre‑normalisation mean
+intensity is selected as the representative.</p>
 </div>
 <div class="section level3">
 <h3 id="how-representatives-are-selected-with-the-correlation-method">How representatives are selected with the correlation method<a class="anchor" aria-label="anchor" href="#how-representatives-are-selected-with-the-correlation-method"></a>
