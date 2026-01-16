@@ -9,10 +9,12 @@
 #'   single-level strata is created so all samples are treated as one batch. When
 #'   provided, the column must exist in `df` with no NA values.
 #' @param num_screen_SERRF Number of correlated features to use in model fitting. Default is 10.
+#' @param seed Set a random number generator seed, default 0.
 #'
 #' @return A normalized data frame.
 #' @export
-normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = NULL, num_screen_SERRF = 10) {
+normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = NULL, num_screen_SERRF = 10, seed = 0) {
+    set.seed(seed)
     # ---- Validation ----
     temp_strata_cols <- character(0)
 
@@ -75,7 +77,7 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = N
 
     # ---- Normalize Each Feature ----
     for (j in seq_along(target_cols)) {
-        if (j %% 250 == 1) cat("Feature", j, "\n")
+        if (j %% 250 == 1) cat(j, "out of ", target_cols, " features normalised\n")
         feature_name <- target_cols[j]
 
         for (batch in batch_levels) {

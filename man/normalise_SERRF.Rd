@@ -9,7 +9,8 @@ normalise_SERRF(
   target_cols = NULL,
   is_qc = NULL,
   strata_col = NULL,
-  num_screen_SERRF = 10
+  num_screen_SERRF = 10,
+  seed = 0
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ single-level strata is created so all samples are treated as one batch. When
 provided, the column must exist in \code{df} with no NA values.}
 
 \item{num_screen_SERRF}{Number of correlated features to use in model fitting. Default is 10.}
+
+\item{seed}{Set a random number generator seed, default 0.}
 }
 \value{
 A normalized data frame.
