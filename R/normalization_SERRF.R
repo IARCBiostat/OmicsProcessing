@@ -77,7 +77,7 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = N
 
     # ---- Normalize Each Feature ----
     for (j in seq_along(target_cols)) {
-        if (j %% 250 == 1) cat(j, "out of ", target_cols, " features normalised\n")
+        if (j %% 250 == 1) cat(j, "out of ", length(target_cols), " features normalised\n")
         feature_name <- target_cols[j]
 
         for (batch in batch_levels) {
