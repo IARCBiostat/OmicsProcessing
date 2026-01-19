@@ -11,11 +11,11 @@
 ## Citation
 
 Viallon V, Matthew L, Farnudi A (2026). *OmicsProcessing:
-OmicsProcessing*. R package version 1.1.2.
+OmicsProcessing*. R package version 1.1.3.
 
     @Manual{,
       title = {OmicsProcessing: OmicsProcessing},
       author = {Vivian Viallon and Lee Matthew and Ali Farnudi},
       year = {2026},
-      note = {R package version 1.1.2},
+      note = {R package version 1.1.3},
     }
