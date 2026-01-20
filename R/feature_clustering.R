@@ -4,6 +4,11 @@
 #' hierarchical clustering, then selects a representative feature for each
 #' cluster either via scores or via correlation-based aggregation.
 #'
+#' QC rows (as indicated by \code{is_qc}) are excluded from all clustering and
+#' summarisation steps, and are not present in the returned \code{clustered_df}.
+#' Additionally, all columns in \code{df} that are not part of \code{target_cols}
+#' are prepended to the returned \code{clustered_df} unchanged.
+#'
 #' @param df
 #'   A data.frame (or tibble) with feature data in columns and samples in
 #'   rows.
@@ -13,8 +18,8 @@
 #' @param is_qc
 #'   Logical vector marking QC samples. Must have length equal to
 #'   \code{nrow(df)}. If \code{NULL}, all samples are treated as non-QC.
-#'   (Currently only used for consistency with other interfaces; it is not
-#'   used directly in this function.)
+#'   QC rows are excluded from clustering/summarisation and from the returned
+#'   \code{clustered_df}.
 #' @param rt_height
 #'   Numeric height at which to cut the dendrogram in retention-time
 #'   space. Smaller values create more clusters.
@@ -27,9 +32,9 @@
 #' @param scores
 #'   Named numeric vector of feature scores, required when
 #'   \code{method = "scores"}. Names must coincide with \code{target_cols}.
-#'   For each retention-time cluster, the feature  are subclusterd based on the 
-#'   input correlation threshold. The feature with the highest score is selected 
-#'   as the representative of each subcluster.
+#'   For each retention-time cluster, the features are subclustered based on
+#'   the input correlation threshold. The feature with the highest score is
+#'   selected as the representative of each subcluster.
 #' @param cut_height
 #'   Numeric height used inside \code{cluster_features_based_on_correlations}
 #'   when \code{method = "correlations"}. Passed on to that function's
@@ -44,9 +49,12 @@
 #'
 #'   \describe{
 #'     \item{\code{clustered_df}}{
-#'       A data.frame with one column per final representative feature.
-#'       When \code{method = "scores"}, this consists of a subset of the
-#'       original feature columns. When \code{method = "correlations"}, it
+#'       A data.frame where rows correspond to non-QC samples only.
+#'       All non-target columns (i.e. \code{setdiff(names(df), target_cols)})
+#'       are included unchanged, followed by one column per final
+#'       representative feature.
+#'       When \code{method = "scores"}, representative features are a subset of
+#'       the original feature columns. When \code{method = "correlations"}, it
 #'       may contain synthetic features created by
 #'       \code{cluster_features_based_on_correlations()}.
 #'     }
@@ -90,6 +98,7 @@
 #' @examples
 #' \dontrun{
 #' df <- data.frame(
+#'   batch = rep(1, 20),
 #'   `100@150` = rnorm(20),
 #'   `100@151` = rnorm(20),
 #'   `101@200` = rnorm(20)
@@ -144,7 +153,11 @@ cluster_features_by_retention_time <- function(
   if (length(is_qc) != nrow(df)) {
     stop("`is_qc` must be a logical vector with the same length as nrow(df).")
   }
-  target_cols <- resolve_target_cols(df, target_cols)
+
+  # 1) Exclude QC rows for all downstream computations + output
+  df_use <- df[!is_qc, , drop = FALSE]
+
+  target_cols <- resolve_target_cols(df_use, target_cols)
 
   if (method == "scores") {
     if (is.null(names(scores))) {
@@ -176,32 +189,40 @@ cluster_features_by_retention_time <- function(
   }
 
   retention_times <- parse_mass_rt(target_cols, "rt")
-
   cluster_ids <- cluster_hierarchical(retention_times, height = rt_height)
 
   cluster_feature_list <- split(as.character(target_cols), cluster_ids)
   names(cluster_feature_list) <- sprintf("ClustRT%s", names(cluster_feature_list))
 
-
   if (method == "scores") {
     representatives <- get_features_representatives_based_on_scores(
-      df,
+      df_use,
       cluster_feature_list,
       corr_thresh = corr_thresh,
       scores
     )
-    clustered_df <- df[, representatives$representatives]
+    clustered_df <- df_use[, representatives$representatives, drop = FALSE]
     representatives_map <- representatives$representatives_map
   }
+
   if (method == "correlations") {
     results <- cluster_features_based_on_correlations(
-      df,
+      df_use,
       cluster_feature_list,
       cut_height = cut_height,
       corr_thresh = corr_thresh
     )
     clustered_df <- results$clustered_df
     representatives_map <- results$representatives_map
+  }
+
+  # 2) Attach all non-target columns back onto clustered_df
+  other_cols <- setdiff(names(df_use), target_cols)
+  if (length(other_cols) > 0L) {
+    clustered_df <- cbind(
+      df_use[, other_cols, drop = FALSE],
+      clustered_df
+    )
   }
 
   return(
@@ -211,6 +232,7 @@ cluster_features_by_retention_time <- function(
     )
   )
 }
+
 
 
 #' General hierarchical clustering
