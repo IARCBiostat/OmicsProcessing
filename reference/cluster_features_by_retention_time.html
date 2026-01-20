@@ -11,7 +11,7 @@ cluster either via scores or via correlation-based aggregation."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,8 +83,8 @@ rows.</p></dd>
 <dt id="arg-is-qc">is_qc<a class="anchor" aria-label="anchor" href="#arg-is-qc"></a></dt>
 <dd><p>Logical vector marking QC samples. Must have length equal to
 <code>nrow(df)</code>. If <code>NULL</code>, all samples are treated as non-QC.
-(Currently only used for consistency with other interfaces; it is not
-used directly in this function.)</p></dd>
+QC rows are excluded from clustering/summarisation and from the returned
+<code>clustered_df</code>.</p></dd>
 
 
 <dt id="arg-rt-height">rt_height<a class="anchor" aria-label="anchor" href="#arg-rt-height"></a></dt>
@@ -103,9 +103,9 @@ processed using correlation-based summarisation.</p></dd>
 <dt id="arg-scores">scores<a class="anchor" aria-label="anchor" href="#arg-scores"></a></dt>
 <dd><p>Named numeric vector of feature scores, required when
 <code>method = "scores"</code>. Names must coincide with <code>target_cols</code>.
-For each retention-time cluster, the feature  are subclusterd based on the
-input correlation threshold. The feature with the highest score is selected
-as the representative of each subcluster.</p></dd>
+For each retention-time cluster, the features are subclustered based on
+the input correlation threshold. The feature with the highest score is
+selected as the representative of each subcluster.</p></dd>
 
 
 <dt id="arg-cut-height">cut_height<a class="anchor" aria-label="anchor" href="#arg-cut-height"></a></dt>
@@ -124,9 +124,12 @@ when <code>method = "correlations"</code>. Passed on to that function's
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with two elements:</p>
 <dl><dt><code>clustered_df</code></dt>
-<dd><p>A data.frame with one column per final representative feature.
-When <code>method = "scores"</code>, this consists of a subset of the
-original feature columns. When <code>method = "correlations"</code>, it
+<dd><p>A data.frame where rows correspond to non-QC samples only.
+All non-target columns (i.e. <code>setdiff(names(df), target_cols)</code>)
+are included unchanged, followed by one column per final
+representative feature.
+When <code>method = "scores"</code>, representative features are a subset of
+the original feature columns. When <code>method = "correlations"</code>, it
 may contain synthetic features created by
 <code><a href="cluster_features_based_on_correlations.html">cluster_features_based_on_correlations()</a></code>.</p></dd>
 
@@ -139,7 +142,11 @@ represents within its retention-time cluster.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The function proceeds in two steps:</p>
+    <p>QC rows (as indicated by <code>is_qc</code>) are excluded from all clustering and
+summarisation steps, and are not present in the returned <code>clustered_df</code>.
+Additionally, all columns in <code>df</code> that are not part of <code>target_cols</code>
+are prepended to the returned <code>clustered_df</code> unchanged.</p>
+<p>The function proceeds in two steps:</p>
 <ol><li><p>Retention-time clustering: feature names in <code>target_cols</code>
 are first parsed using <code><a href="parse_mass_rt.html">parse_mass_rt()</a></code> to extract retention times,
 which are then clustered by <code>cluster_hierarchical()</code> at height
@@ -169,6 +176,7 @@ based on correlations.</p></li>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  batch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  `100@150` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  `100@151` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  `101@200` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span></span></span>

@@ -35,9 +35,9 @@ cluster_features_by_retention_time(
 - is_qc:
 
   Logical vector marking QC samples. Must have length equal to
-  `nrow(df)`. If `NULL`, all samples are treated as non-QC. (Currently
-  only used for consistency with other interfaces; it is not used
-  directly in this function.)
+  `nrow(df)`. If `NULL`, all samples are treated as non-QC. QC rows are
+  excluded from clustering/summarisation and from the returned
+  `clustered_df`.
 
 - rt_height:
 
@@ -56,9 +56,9 @@ cluster_features_by_retention_time(
 
   Named numeric vector of feature scores, required when
   `method = "scores"`. Names must coincide with `target_cols`. For each
-  retention-time cluster, the feature are subclusterd based on the input
-  correlation threshold. The feature with the highest score is selected
-  as the representative of each subcluster.
+  retention-time cluster, the features are subclustered based on the
+  input correlation threshold. The feature with the highest score is
+  selected as the representative of each subcluster.
 
 - cut_height:
 
@@ -78,10 +78,13 @@ A list with two elements:
 
 - `clustered_df`:
 
-  A data.frame with one column per final representative feature. When
-  `method = "scores"`, this consists of a subset of the original feature
-  columns. When `method = "correlations"`, it may contain synthetic
-  features created by
+  A data.frame where rows correspond to non-QC samples only. All
+  non-target columns (i.e. `setdiff(names(df), target_cols)`) are
+  included unchanged, followed by one column per final representative
+  feature. When `method = "scores"`, representative features are a
+  subset of the original feature columns. When
+  `method = "correlations"`, it may contain synthetic features created
+  by
   [`cluster_features_based_on_correlations()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_based_on_correlations.md).
 
 - `representatives_map`:
@@ -91,6 +94,11 @@ A list with two elements:
   within its retention-time cluster.
 
 ## Details
+
+QC rows (as indicated by `is_qc`) are excluded from all clustering and
+summarisation steps, and are not present in the returned `clustered_df`.
+Additionally, all columns in `df` that are not part of `target_cols` are
+prepended to the returned `clustered_df` unchanged.
 
 The function proceeds in two steps:
 
@@ -127,6 +135,7 @@ The function proceeds in two steps:
 ``` r
 if (FALSE) { # \dontrun{
 df <- data.frame(
+  batch = rep(1, 20),
   `100@150` = rnorm(20),
   `100@151` = rnorm(20),
   `101@200` = rnorm(20)
