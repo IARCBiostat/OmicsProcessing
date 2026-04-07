@@ -11,7 +11,7 @@ plot_omics_distributions(
   is_qc = NULL,
   batch = NULL,
   plate = NULL,
-  title_ref = NULL,
+  title = NULL,
   df_comp = NULL,
   title_comp = NULL,
   point_size = 1
@@ -42,7 +42,7 @@ encoding plate membership. If provided, points are coloured by plate. If
 \code{NULL}, all points are assigned to a single plate level \code{"all"}.
 Default is \code{NULL}.}
 
-\item{title_ref}{Optional title for the reference plot. If \code{df_comp} is not
+\item{title}{Optional title for the reference plot. If \code{df_comp} is not
 \code{NULL} and \code{title_ref} is \code{NULL}, the default title is \code{"Reference"}.
 Default is \code{NULL}.}
 

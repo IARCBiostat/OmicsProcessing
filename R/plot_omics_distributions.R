@@ -36,7 +36,7 @@
 #'   encoding plate membership. If provided, points are coloured by plate. If
 #'   `NULL`, all points are assigned to a single plate level `"all"`.
 #'   Default is `NULL`.
-#' @param title_ref Optional title for the reference plot. If `df_comp` is not
+#' @param title Optional title for the reference plot. If `df_comp` is not
 #'   `NULL` and `title_ref` is `NULL`, the default title is `"Reference"`.
 #'   Default is `NULL`.
 #' @param title_comp Optional title for the comparison plot. If `df_comp` is
@@ -90,13 +90,13 @@ plot_omics_distributions <- function(
   is_qc = NULL,
   batch = NULL,
   plate = NULL,
-  title_ref = NULL,
+  title = NULL,
   df_comp = NULL,
   title_comp = NULL,
   point_size = 1
 ) {
   if (!is.null(df_comp)) {
-    if (is.null(title_ref)) title_ref <- "Reference"
+    if (is.null(title)) title <- "Reference"
     if (is.null(title_comp)) title_comp <- "Comparison"
   }
 
@@ -111,7 +111,7 @@ plot_omics_distributions <- function(
 
   p_ref <- plot_scatter_omics_feature(
     df_long = df_long_ref,
-    title = title_ref,
+    title = title,
     batch = batch,
     point_size = point_size
   )

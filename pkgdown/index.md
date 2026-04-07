@@ -103,6 +103,26 @@ clusters <- cluster_features_by_retention_time(
   corr_thresh = 0.75
 )
 ```
+### Quick visual check after normalisation
+
+Before moving on to downstream analyses, it is often useful to inspect a few features manually. A simple strategy is to choose 3 features at random and compare their run-order profiles before and after normalisation with [`plot_omics_distributions()`](articles/plot-omics-distributions.html).
+
+```r
+set.seed(1)
+sample_features <- sample(target_cols, 3)
+
+plot_omics_distributions(
+  df = df_imputed,
+  df_comp = df_normalised,
+  target_cols = sample_features,
+  run_order = "run_ord",
+  is_qc = "is_qc",
+  batch = "batch_id",
+  plate = "plate_id",
+  title = "Before normalisation",
+  title_comp = "After normalisation"
+)
+```
 
 ## Developers & Contributors
 
