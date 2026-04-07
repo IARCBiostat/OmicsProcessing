@@ -17,6 +17,7 @@ Pre-analysis processing for metabolomics and proteomics: missingness filtering, 
   - Detect outlier samples with [`remove_outliers()`](reference/remove_outliers.html) ([vignette](articles/outlier-removal.html))
   - Impute with RF, LCMD, or both via [`hybrid_imputation()`](reference/hybrid_imputation.html) ([vignette](articles/hybrid-imputation.html))
   - Normalise with SERRF using [`normalise_SERRF()`](reference/normalise_SERRF.html) ([vignette](articles/serrf-normalisation.html))
+  - Compare run-order plots before and after normalisation with `plot_omics_distributions()` ([vignette](articles/plot-omics-distributions.html))
   - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](reference/cluster_features_by_retention_time.html) ([vignette](articles/feature-clustering.html))
 
 ## Quick start
@@ -102,6 +103,26 @@ clusters <- cluster_features_by_retention_time(
   corr_thresh = 0.75
 )
 ```
+### Quick visual check after normalisation
+
+Before moving on to downstream analyses, it is often useful to inspect a few features manually. A simple strategy is to choose 3 features at random and compare their run-order profiles before and after normalisation with [`plot_omics_distributions()`](articles/plot-omics-distributions.html).
+
+```r
+set.seed(1)
+sample_features <- sample(target_cols, 3)
+
+plot_omics_distributions(
+  df = df_imputed,
+  df_comp = df_normalised,
+  target_cols = sample_features,
+  run_order = "run_ord",
+  is_qc = "is_qc",
+  batch = "batch_id",
+  plate = "plate_id",
+  title = "Before normalisation",
+  title_comp = "After normalisation"
+)
+```
 
 ## Developers & Contributors
 
@@ -118,5 +139,6 @@ Please follow these guidelines: [Developers & Contributors](articles/developer-g
 - Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
 - Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
 - SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
+- Normalisation plot comparison: [Compare run-order plots before and after normalisation](articles/plot-omics-distributions.html)
 - Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
 - Developers & contributors: [Developer guide](articles/developer-guidelines.html)

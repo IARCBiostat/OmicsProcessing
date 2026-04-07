@@ -37,3 +37,23 @@
 #' }
 #' @usage data(data_meta_samples)
 "data_meta_samples"
+
+#' Synthetic omics dataset for plotting and normalisation examples
+#'
+#' A synthetic omics dataset with run order, batch, plate, QC flags, and ten
+#' feature columns. It is intended for examples and vignettes demonstrating
+#' plotting and normalisation workflows. Reproducible data-generation code is
+#' available in `data-raw/omics_synthetic.R` in the source repository and in
+#' the installed package via `system.file("scripts", "omics_synthetic.R",
+#' package = "OmicsProcessing")`.
+#'
+#' @format A data frame with 2000 rows and 14 variables:
+#' \describe{
+#'   \item{plate_id}{Plate identifier with 4 levels.}
+#'   \item{F1-F10}{Numeric feature intensity columns.}
+#'   \item{run_ord}{Integer run order.}
+#'   \item{batch_id}{Batch identifier.}
+#'   \item{is_qc}{Logical indicator for QC samples.}
+#' }
+#' @usage data(omics_synthetic)
+"omics_synthetic"

@@ -2,6 +2,7 @@
 
 export("%>%")
 export(FUNnormalization_residualMixedModels)
+export(build_omics_synthetic)
 export(calculate_ICC)
 export(calculate_ICC_parallel)
 export(check_dataframe_validity)
