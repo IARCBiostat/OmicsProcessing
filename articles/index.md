@@ -14,6 +14,8 @@
   log1p()](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.md):
 - [Outlier removal with
   remove_outliers()](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.md):
+- [Normalisation plot
+  comparison](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.md):
 - [Semi-automated pipeline with
   process_data()](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.md):
 - [Batch correction using

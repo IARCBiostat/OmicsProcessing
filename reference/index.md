@@ -4,6 +4,8 @@
 
 - [`FUNnormalization_residualMixedModels()`](https://iarcbiostat.github.io/OmicsProcessing/reference/FUNnormalization_residualMixedModels.md)
   : Compute Residuals Using Mixed Models
+- [`build_omics_synthetic()`](https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.md)
+  : Build synthetic omics data for plotting and normalisation examples
 - [`calculate_ICC()`](https://iarcbiostat.github.io/OmicsProcessing/reference/calculate_ICC.md)
   : Calculate Intraclass Correlation Coefficient (ICC)
 - [`calculate_ICC_parallel()`](https://iarcbiostat.github.io/OmicsProcessing/reference/calculate_ICC_parallel.md)
@@ -47,10 +49,18 @@
   : SERRF Normalization
 - [`normalization_residualMixedModels()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalization_residualMixedModels.md)
   : Normalize feature Data Using Residual Mixed Models
+- [`omics_synthetic`](https://iarcbiostat.github.io/OmicsProcessing/reference/omics_synthetic.md)
+  : Synthetic omics dataset for plotting and normalisation examples
 - [`outlier_pca_lof()`](https://iarcbiostat.github.io/OmicsProcessing/reference/outlier_pca_lof.md)
   : PCA-Based Outlier Detection Using LOF
 - [`parse_mass_rt()`](https://iarcbiostat.github.io/OmicsProcessing/reference/parse_mass_rt.md)
   : Parse mass/retention-time strings
+- [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.md)
+  : Plot feature values by run order for reference and comparison data
+- [`plot_scatter_omics_feature()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_scatter_omics_feature.md)
+  : Plot feature intensities across run order
+- [`prepare_df_long()`](https://iarcbiostat.github.io/OmicsProcessing/reference/prepare_df_long.md)
+  : Prepare long-format data for feature plots
 - [`process_data()`](https://iarcbiostat.github.io/OmicsProcessing/reference/process_data.md)
   : Process feature data
 - [`register_cluster()`](https://iarcbiostat.github.io/OmicsProcessing/reference/register_cluster.md)

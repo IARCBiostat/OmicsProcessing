@@ -7,11 +7,13 @@
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/index.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/authors.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/index.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/FUNnormalization_residualMixedModels.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/calculate_ICC.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/calculate_ICC_parallel.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/check_dataframe_validity.html</loc></url>
@@ -36,9 +38,13 @@
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/index.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/normalization_residualMixedModels.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/omics_synthetic.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/outlier_pca_lof.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/parse_mass_rt.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/pipe.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/plot_scatter_omics_feature.html</loc></url>
+<url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/prepare_df_long.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/process_data.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/register_cluster.html</loc></url>
 <url><loc>https://iarcbiostat.github.io/OmicsProcessing/reference/remove_outliers.html</loc></url>

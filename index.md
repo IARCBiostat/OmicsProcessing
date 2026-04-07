@@ -33,6 +33,9 @@ normalisation across batches or strata.
   - Normalise with SERRF using
     [`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.md)
     ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.md))
+  - Compare run-order plots before and after normalisation with
+    [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.md)
+    ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.md))
   - Cluster features by RT or correlations using
     [`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.md)
     ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.md))
@@ -121,6 +124,31 @@ clusters <- cluster_features_by_retention_time(
 )
 ```
 
+### Quick visual check after normalisation
+
+Before moving on to downstream analyses, it is often useful to inspect a
+few features manually. A simple strategy is to choose 3 features at
+random and compare their run-order profiles before and after
+normalisation with
+[`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.md).
+
+``` r
+set.seed(1)
+sample_features <- sample(target_cols, 3)
+
+plot_omics_distributions(
+  df = df_imputed,
+  df_comp = df_normalised,
+  target_cols = sample_features,
+  run_order = "run_ord",
+  is_qc = "is_qc",
+  batch = "batch_id",
+  plate = "plate_id",
+  title = "Before normalisation",
+  title_comp = "After normalisation"
+)
+```
+
 ## Developers & Contributors
 
 We welcome contributions to **OmicsProcessing**. Our priorities are
@@ -145,6 +173,9 @@ Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-g
   (log1p)](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.md)
 - SERRF batch correction: [Batch correction using
   SERRF](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.md)
+- Normalisation plot comparison: [Compare run-order plots before and
+  after
+  normalisation](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.md)
 - Feature clustering: [Retention-time
   clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.md)
 - Developers & contributors: [Developer
