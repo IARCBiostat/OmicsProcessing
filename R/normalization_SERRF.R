@@ -75,9 +75,14 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = N
         corrs_target[[batch]] <- cor(target, method = "spearman")
     }
 
-    # ---- Normalize Each Feature ----
+    n <- length(target_cols)
+    step <- max(1, floor(n / 10))
+
     for (j in seq_along(target_cols)) {
-        if (j %% 250 == 1) cat(j, "out of ", length(target_cols), " features normalised\n")
+        if (j %% step == 1 || j == n) {
+            pct <- round(100 * j / n)
+            cat(j, "out of", n, "features normalised (", pct, "%)\n")
+        }
         feature_name <- target_cols[j]
 
         for (batch in batch_levels) {
