@@ -56,7 +56,7 @@ testthat::test_that("prepare_df_long uses defaults when qc, batch, and plate are
   testthat::expect_equal(out$run_order, c(1, 2))
 })
 
-testthat::test_that("plot_scatter_normalization returns a ggplot object", {
+testthat::test_that("plot_scatter_omics_feature returns a ggplot object", {
   df_long <- data.frame(
     run_order = c(1, 2, 3, 4),
     value = c(10, 11, 20, 21),
@@ -66,7 +66,7 @@ testthat::test_that("plot_scatter_normalization returns a ggplot object", {
     plate = factor(c("p1", "p1", "p2", "p2"))
   )
 
-  p <- plot_scatter_normalization(
+  p <- plot_scatter_omics_feature(
     df_long = df_long,
     title = "Test plot",
     batch = "batch",
@@ -76,7 +76,7 @@ testthat::test_that("plot_scatter_normalization returns a ggplot object", {
   testthat::expect_s3_class(p, "ggplot")
 })
 
-testthat::test_that("plot_scatter_normalization adds batch boundary lines when batch is given", {
+testthat::test_that("plot_scatter_omics_feature adds batch boundary lines when batch is given", {
   df_long <- data.frame(
     run_order = c(1, 2, 3, 4),
     value = c(10, 11, 20, 21),
@@ -86,7 +86,7 @@ testthat::test_that("plot_scatter_normalization adds batch boundary lines when b
     plate = factor(c("p1", "p1", "p2", "p2"))
   )
 
-  p <- plot_scatter_normalization(
+  p <- plot_scatter_omics_feature(
     df_long = df_long,
     batch = "batch"
   )
@@ -100,7 +100,7 @@ testthat::test_that("plot_scatter_normalization adds batch boundary lines when b
   testthat::expect_true("GeomVline" %in% layer_classes)
 })
 
-testthat::test_that("plot_scatter_normalization does not add batch lines when batch is NULL", {
+testthat::test_that("plot_scatter_omics_feature does not add batch lines when batch is NULL", {
   df_long <- data.frame(
     run_order = c(1, 2),
     value = c(10, 20),
@@ -110,7 +110,7 @@ testthat::test_that("plot_scatter_normalization does not add batch lines when ba
     plate = factor(c("p1", "p1"))
   )
 
-  p <- plot_scatter_normalization(
+  p <- plot_scatter_omics_feature(
     df_long = df_long,
     batch = NULL
   )
@@ -124,7 +124,7 @@ testthat::test_that("plot_scatter_normalization does not add batch lines when ba
   testthat::expect_false("GeomVline" %in% layer_classes)
 })
 
-testthat::test_that("plot_normalization_comparison returns a single ggplot without comparison data", {
+testthat::test_that("plot_omics_distributions returns a single ggplot without comparison data", {
   df <- data.frame(
     injection_order = c(1, 2, 3),
     qc_flag = c(TRUE, FALSE, FALSE),
@@ -133,7 +133,7 @@ testthat::test_that("plot_normalization_comparison returns a single ggplot witho
     feat1 = c(10, 20, 30)
   )
 
-  p <- plot_normalization_comparison(
+  p <- plot_omics_distributions(
     df = df,
     target_cols = "feat1",
     run_order = "injection_order",
@@ -145,7 +145,7 @@ testthat::test_that("plot_normalization_comparison returns a single ggplot witho
   testthat::expect_s3_class(p, "ggplot")
 })
 
-testthat::test_that("plot_normalization_comparison returns a patchwork object with comparison data", {
+testthat::test_that("plot_omics_distributions returns a patchwork object with comparison data", {
   df <- data.frame(
     injection_order = c(1, 2, 3),
     qc_flag = c(TRUE, FALSE, FALSE),
@@ -162,7 +162,7 @@ testthat::test_that("plot_normalization_comparison returns a patchwork object wi
     feat1 = c(11, 19, 31)
   )
 
-  p <- plot_normalization_comparison(
+  p <- plot_omics_distributions(
     df = df,
     df_comp = df_comp,
     target_cols = "feat1",
@@ -175,7 +175,7 @@ testthat::test_that("plot_normalization_comparison returns a patchwork object wi
   testthat::expect_true(inherits(p, "patchwork"))
 })
 
-testthat::test_that("plot_normalization_comparison sets default titles when comparison is supplied", {
+testthat::test_that("plot_omics_distributions sets default titles when comparison is supplied", {
   df <- data.frame(
     injection_order = c(1, 2),
     qc_flag = c(TRUE, FALSE),
@@ -184,7 +184,7 @@ testthat::test_that("plot_normalization_comparison sets default titles when comp
     feat1 = c(10, 20)
   )
 
-  p <- plot_normalization_comparison(
+  p <- plot_omics_distributions(
     df = df,
     df_comp = df,
     target_cols = "feat1",

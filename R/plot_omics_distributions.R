@@ -83,7 +83,7 @@
 #' @author
 #' Original version developed by Carlota Castro Espin. Modified by Felix
 #' Boekstegers.
-plot_normalization_comparison <- function(
+plot_omics_distributions <- function(
   df,
   target_cols,
   run_order,
@@ -109,7 +109,7 @@ plot_normalization_comparison <- function(
     plate = plate
   )
 
-  p_ref <- plot_scatter_normalization(
+  p_ref <- plot_scatter_omics_feature(
     df_long = df_long_ref,
     title = title_ref,
     batch = batch,
@@ -142,7 +142,7 @@ plot_normalization_comparison <- function(
     plate = plate
   )
 
-  p_comp <- plot_scatter_normalization(
+  p_comp <- plot_scatter_omics_feature(
     df_long = df_long_comp,
     title = title_comp,
     batch = batch,
@@ -173,7 +173,7 @@ plot_normalization_comparison <- function(
 }
 
 
-#' Prepare long-format data for normalisation plots
+#' Prepare long-format data for feature plots
 #'
 #' Reshapes a wide data frame of feature intensities into long format
 #' suitable for plotting against run order. Adds standardised columns for
@@ -272,14 +272,14 @@ prepare_df_long <- function(
 #' @return A \code{ggplot2} object.
 #'
 #' @examples
-#' p <- plot_scatter_normalization(
+#' p <- plot_scatter_omics_feature(
 #'   df_long = df_long,
 #'   title = "Before normalisation",
 #'   batch = "batch",
 #'   point_size = 1
 #' )
 #' print(p)
-plot_scatter_normalization <- function(
+plot_scatter_omics_feature <- function(
   df_long,
   title = NULL,
   batch = NULL,
@@ -357,4 +357,3 @@ plot_scatter_normalization <- function(
 
   fig
 }
-

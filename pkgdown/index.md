@@ -17,6 +17,7 @@ Pre-analysis processing for metabolomics and proteomics: missingness filtering, 
   - Detect outlier samples with [`remove_outliers()`](reference/remove_outliers.html) ([vignette](articles/outlier-removal.html))
   - Impute with RF, LCMD, or both via [`hybrid_imputation()`](reference/hybrid_imputation.html) ([vignette](articles/hybrid-imputation.html))
   - Normalise with SERRF using [`normalise_SERRF()`](reference/normalise_SERRF.html) ([vignette](articles/serrf-normalisation.html))
+  - Compare run-order plots before and after normalisation with `plot_omics_distributions()` ([vignette](articles/plot-omics-distributions.html))
   - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](reference/cluster_features_by_retention_time.html) ([vignette](articles/feature-clustering.html))
 
 ## Quick start
@@ -118,5 +119,6 @@ Please follow these guidelines: [Developers & Contributors](articles/developer-g
 - Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
 - Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
 - SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
+- Normalisation plot comparison: [Compare run-order plots before and after normalisation](articles/plot-omics-distributions.html)
 - Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
 - Developers & contributors: [Developer guide](articles/developer-guidelines.html)

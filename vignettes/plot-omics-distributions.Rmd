@@ -1,0 +1,95 @@
+---
+title: "Normalisation plot comparison"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Normalisation plot comparison}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Compare run-order plots before and after normalisation
+
+Use `plot_omics_distributions()` to visualise feature intensities
+across run order before and after normalisation. The plot is useful for
+checking whether QC drift and plate or batch effects are reduced after
+processing.
+
+```{r eval=FALSE}
+target_features <- c("feature_1", "feature_2", "feature_3")
+
+p <- OmicsProcessing:::plot_omics_distributions(
+  df = df_pre_normalised,
+  df_comp = df_normalised,
+  target_cols = target_features,
+  run_order = "run_order",
+  is_qc = "is_qc",
+  batch = "batch",
+  plate = "plate",
+  title_ref = "Before normalisation",
+  title_comp = "After normalisation",
+  point_size = 1.2
+)
+
+p
+```
+
+The reference data frame (`df`) and comparison data frame (`df_comp`)
+should contain the same feature columns and run-order variable. When
+`df_comp` is supplied, the function returns side-by-side plots with a
+shared legend so you can compare the effect of normalisation directly.
+
+### Minimal input requirements
+
+- `target_cols`: character vector of feature columns to facet.
+- `run_order`: column containing injection or acquisition order.
+- `is_qc`: optional logical QC indicator column; if omitted, all samples
+  are treated as non-QC.
+- `batch`: optional batch column used to draw vertical batch boundary
+  lines.
+- `plate`: optional plate column used to colour points.
+
+### Typical workflow
+
+This plot is most useful after you have:
+
+1. filtered features and samples,
+2. imputed missing values if needed, and
+3. created a normalised data frame, for example with
+   `normalise_SERRF()`.
+
+```{r eval=FALSE}
+df_normalised <- OmicsProcessing::normalise_SERRF(
+  df_imputed,
+  target_cols = target_features,
+  is_qc = df_imputed$is_qc,
+  strata_col = "batch"
+)
+
+OmicsProcessing:::plot_omics_distributions(
+  df = df_imputed,
+  df_comp = df_normalised,
+  target_cols = target_features,
+  run_order = "run_order",
+  is_qc = "is_qc",
+  batch = "batch",
+  plate = "plate"
+)
+```
+
+### Interpretation tips
+
+- QC samples should show smoother behaviour across run order after
+  normalisation if technical drift has been reduced.
+- Plate colouring can help reveal residual plate-specific structure.
+- Batch boundary lines are useful for checking whether step changes
+  remain after correction.
+
+If you are using SERRF for correction, see the related vignette:
+[Batch correction using SERRF](../articles/serrf-normalisation.html).
