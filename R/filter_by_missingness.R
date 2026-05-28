@@ -63,8 +63,15 @@ final_cols <- function(target_cols_kept, non_target_cols, all_names) {
 #' @param df A data.frame.
 #' @param row_thresh Proportion of missing values allowed per (non-QC) row in target columns.
 #' @param col_thresh Proportion of missing values allowed per column in target columns.
-#' @param target_cols Character vector of target columns. If NULL, resolved by `resolve_target_cols()`.
-#' @param is_qc Logical vector the same length as `nrow(df)` indicating QC rows (always retained).
+#' @param target_cols Character vector of target columns used for missingness
+#' #' filtering. Non-target columns are always retained in the output and are
+#' #' not considered when calculating row or column missingness thresholds.
+#' #' If `NULL`, target columns are resolved automatically using
+#' #' `resolve_target_cols()`.
+#' @param is_qc Logical vector the same length as `nrow(df)` indicating QC
+#' #' rows. Rows where `is_qc` is `TRUE` are always retained in the output and
+#' #' are excluded from all row and column missingness calculations used for
+#' #' filtering thresholds. If `NULL`, all rows are treated as non-QC rows.
 #' @param filter_order One of `"iterative"` (default), `"col_then_row"`, `"row_then_col"`, or `"simultaneous"`.
 #'   * `"iterative"`: alternately filter rows and columns until stable or `max_iter` is reached.
 #'   * `"col_then_row"`: filter columns first, then rows.
