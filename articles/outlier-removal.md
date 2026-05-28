@@ -3,6 +3,7 @@
 ## Outlier removal using PCA + LOF
 
 ``` r
+
 outlier_results <- OmicsProcessing::remove_outliers(
   filtered_df,
   target_cols = "@",
@@ -53,6 +54,7 @@ stratum**, and results are then merged:
 **Examples**
 
 ``` r
+
 ## 1) No stratification (default)
 res <- OmicsProcessing::remove_outliers(
   df, 

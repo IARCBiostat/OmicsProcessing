@@ -3,6 +3,7 @@
 ## Step 4: Hybrid Imputation (Random Forest + LCMD)
 
 ``` r
+
 imputed_results <- OmicsProcessing::hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
@@ -33,11 +34,73 @@ and returns:
 See the full reference:
 [`hybrid_imputation()`](https://iarcbiostat.github.io/OmicsProcessing/reference/hybrid_imputation.md).
 
+### Handling QC samples with `is_qc`
+
+Rows flagged as `TRUE` by `is_qc` are excluded from the hybrid
+imputation calculations. The rationale is that QC samples are repeatedly
+measured throughout the laboratory workflow and are intended to capture
+technical variability in the measurement process. Excluding them
+prevents these rows from influencing the RF and LCMD imputation models
+fitted to the biological samples.
+
+If QC samples contain missing values that you also want to impute, there
+are two main options.
+
+#### A. Impute QC samples together with the rest of the data
+
+To include all rows in the hybrid imputation process, leave `is_qc` as
+`NULL`, or provide a logical vector of the same length as the number of
+rows in the data, with all values set to `FALSE`.
+
+``` r
+
+imputed_results <- OmicsProcessing::hybrid_imputation(
+  log_transformed_df,
+  target_cols = "@",
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  is_qc = NULL
+)
+
+is_qc_all_false <- rep(FALSE, nrow(log_transformed_df))
+
+imputed_results <- OmicsProcessing::hybrid_imputation(
+  log_transformed_df,
+  target_cols = "@",
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  is_qc = is_qc_all_false
+)
+```
+
+#### B. Impute QC samples using only QC sample values
+
+If you want to impute QC samples separately, using only information from
+other QC samples, you can invert the `is_qc` vector. This excludes all
+non-QC rows from the imputation calculations and applies the pipeline
+only to the QC samples.
+
+``` r
+
+is_qc <- sample_metadata$is_qc
+
+imputed_qc_results <- OmicsProcessing::hybrid_imputation(
+  log_transformed_df,
+  target_cols = "@",
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  is_qc = !is_qc
+)
+
+imputed_qc_df <- imputed_qc_results$hybrid_rf_lcmd
+```
+
 ### Customising the RF and LCMD controls
 
 You can tweak both engines via control lists:
 
 ``` r
+
 my_control_RF <- list(
   parallelize = "no",
   mtry = floor(sqrt(length(target_cols))),
@@ -69,6 +132,7 @@ df_rf_lcmd_hybrid <- OmicsProcessing::hybrid_imputation(
 and set `parallelize`:
 
 ``` r
+
 library(doParallel)
 
 n_cores <- parallel::detectCores(logical = FALSE)

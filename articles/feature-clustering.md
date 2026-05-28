@@ -38,6 +38,7 @@ For each RT-based cluster:
 ### Example 1: Score-based representatives (mean intensity before normalisation)
 
 ``` r
+
 # Assume `imputed_df` is your imputed, SERRF-normalised data
 # Use pre-normalisation means as scores
 target_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
@@ -99,6 +100,7 @@ representative.
 ### Example 2: Correlation-based summarisation within RT clusters
 
 ``` r
+
 res_corr <- OmicsProcessing::cluster_features_by_retention_time(
   df = normalised_df,
   target_cols = "@",

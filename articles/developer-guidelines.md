@@ -29,6 +29,7 @@ documentation.
 #### Example function with roxygen2 documentation
 
 ``` r
+
 #' Add Two Numbers
 #'
 #' This function takes two numeric values and returns their sum.
@@ -60,6 +61,7 @@ function behavior and guide future contributors when changes are needed.
 #### Example unit test
 
 ``` r
+
 test_that("add_two_numbers works as expected", {
   expect_equal(add_two_numbers(1, 2), 3)
   expect_equal(add_two_numbers(-5, 10), 5)
@@ -99,6 +101,7 @@ implementation details. Aim for small, fast, deterministic tests.
 **Errors, warnings, messages**
 
 ``` r
+
 expect_error(fn(bad_arg), class = "my_pkg_error")     # classed errors
 expect_warning(fn(x), "deprecated")                   # or a pattern
 expect_message(fn(verbose = TRUE), "Completed step")
@@ -108,6 +111,7 @@ expect_message(fn(verbose = TRUE), "Completed step")
 Check structure over exact values when appropriate:
 
 ``` r
+
 out <- normalize_intensity(df, method = "median")
 expect_s3_class(out, "data.frame")
 expect_true(all(c("sample_id","metabolite","intensity_norm") %in% names(out)))
@@ -149,6 +153,7 @@ expect_equal(nrow(out), nrow(df))
 - `tests/testthat.R`:
 
 ``` r
+
 library(testthat)
 library(OmicsProcessing)
 test_check("OmicsProcessing")
@@ -174,12 +179,14 @@ test_check("OmicsProcessing")
 **Everything**
 
 ``` r
+
 devtools::test()
 ```
 
 **Filter by file or name**
 
 ``` r
+
 devtools::test(filter = "normalize_intensity") # matches file or test name
 testthat::test_file("tests/testthat/test-impute_values.R")
 ```
@@ -187,5 +194,6 @@ testthat::test_file("tests/testthat/test-impute_values.R")
 **Coverage (optional but encouraged)**
 
 ``` r
+
 covr::report()   # opens HTML coverage report
 ```

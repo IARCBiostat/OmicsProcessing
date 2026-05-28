@@ -18,6 +18,7 @@ For full argument details, see the function reference:
 ### Step 1: Filter by missingness
 
 ``` r
+
 filtered_df <- OmicsProcessing::filter_by_missingness(
   df,
   row_thresh = 0.5,  # Remove features with >50% missingness
@@ -64,6 +65,7 @@ which can produce different results compared to the one-pass methods.
 For the dataset below (rows 2 and 5 are marked as QC):
 
 ``` r
+
 df <- data.frame(
   a = c(NA, 1, NA, 1, NA),
   b = c(NA, NA, 2, 2, NA),
@@ -85,6 +87,7 @@ df
 Different `filter_order` choices yield different results:
 
 ``` r
+
 # Iterative (default)
 filter_by_missingness(df, 0.5, 0.5, target_cols, is_qc, filter_order = "iterative")
 #    b  c d

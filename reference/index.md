@@ -55,6 +55,8 @@
   : PCA-Based Outlier Detection Using LOF
 - [`parse_mass_rt()`](https://iarcbiostat.github.io/OmicsProcessing/reference/parse_mass_rt.md)
   : Parse mass/retention-time strings
+- [`plot_normalization_comparison()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_normalization_comparison.md)
+  : Plot feature values before/after normalization by run order
 - [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.md)
   : Plot feature values by run order for reference and comparison data
 - [`plot_scatter_omics_feature()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_scatter_omics_feature.md)

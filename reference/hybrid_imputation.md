@@ -1,10 +1,11 @@
 # Hybrid Imputation: Random Forest + LCMD
 
-This function performs hybrid imputation on selected columns of a data
-frame by combining Random Forest (RF) imputation (via `missForest`) and
-left-censored missing data (LCMD) imputation (via `imputeLCMD`). It
-selects the method per feature based on the out-of-bag error (OOBE) from
-the RF model.
+Performs hybrid imputation on selected target columns of a data frame by
+combining Random Forest (RF) imputation via `missForest` and
+left-censored missing data (LCMD) imputation via `imputeLCMD`. Only
+non-QC rows are imputed. QC rows are excluded from model fitting, OOB
+error estimation, and imputation, and are returned unchanged. Non-target
+columns are also returned unchanged.
 
 ## Usage
 
@@ -28,9 +29,13 @@ hybrid_imputation(
 
 - target_cols:
 
-  A character vector of column names or a single regular expression to
-  identify target columns for imputation. If NULL, all columns are
-  considered.
+  Character vector of column names, or a single regular expression,
+  identifying columns to impute. Only these columns are passed to the RF
+  and LCMD imputation routines and only these columns can be modified in
+  the returned data frames. Non-target columns are retained but are not
+  imputed or used for method selection. If `NULL`, target columns are
+  resolved automatically using
+  [`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.md).
 
 - is_qc:
 
@@ -79,6 +84,21 @@ A named list with the following components:
 - oob:
 
   A named numeric vector of feature-level OOB errors from RF.
+
+## Details
+
+For each target column, the final imputed values are selected according
+to the feature-level out-of-bag error (OOBE) from the RF model. Target
+columns with RF OOBE strictly below `oobe_threshold` use RF-imputed
+values, whereas target columns with RF OOBE greater than or equal to
+`oobe_threshold` use LCMD-imputed values.
+
+In addition to the hybrid result, the function also returns the complete
+RF and LCMD imputed data frames. This allows users to inspect
+feature-level method choices, perform sensitivity analyses, compare
+alternative imputation strategies, or generate new hybrid imputed data
+frames using different OOBE thresholds without rerunning the imputation
+procedures.
 
 ## See also
 

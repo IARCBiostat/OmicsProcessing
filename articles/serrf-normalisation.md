@@ -3,6 +3,7 @@
 ## Batch correction using Systematical Error Removal using Random Forest (SERRF)
 
 ``` r
+
 out_serrf <- OmicsProcessing::normalise_SERRF(
   imputed_df,
   target_cols = "@",

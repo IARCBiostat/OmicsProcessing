@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Hybrid imputation with RF + LCMD • OmicsProcessing</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Hybrid imputation with RF + LCMD">
 </head>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">OmicsProcessing</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,10 +107,68 @@ and returns:</p>
 </ul>
 <p>See the full reference: <a href="../reference/hybrid_imputation.html"><code>hybrid_imputation()</code></a>.</p>
 <div class="section level3">
+<h3 id="handling-qc-samples-with-is_qc">Handling QC samples with <code>is_qc</code><a class="anchor" aria-label="anchor" href="#handling-qc-samples-with-is_qc"></a>
+</h3>
+<p>Rows flagged as <code>TRUE</code> by <code>is_qc</code> are excluded
+from the hybrid imputation calculations. The rationale is that QC
+samples are repeatedly measured throughout the laboratory workflow and
+are intended to capture technical variability in the measurement
+process. Excluding them prevents these rows from influencing the RF and
+LCMD imputation models fitted to the biological samples.</p>
+<p>If QC samples contain missing values that you also want to impute,
+there are two main options.</p>
+<div class="section level4">
+<h4 id="a--impute-qc-samples-together-with-the-rest-of-the-data">A. Impute QC samples together with the rest of the data<a class="anchor" aria-label="anchor" href="#a--impute-qc-samples-together-with-the-rest-of-the-data"></a>
+</h4>
+<p>To include all rows in the hybrid imputation process, leave
+<code>is_qc</code> as <code>NULL</code>, or provide a logical vector of
+the same length as the number of rows in the data, with all values set
+to <code>FALSE</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">imputed_results</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/hybrid_imputation.html">hybrid_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">log_transformed_df</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"RF-LCMD"</span>,</span>
+<span>  oobe_threshold <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">is_qc_all_false</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">FALSE</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">log_transformed_df</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">imputed_results</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/hybrid_imputation.html">hybrid_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">log_transformed_df</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"RF-LCMD"</span>,</span>
+<span>  oobe_threshold <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="va">is_qc_all_false</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="b--impute-qc-samples-using-only-qc-sample-values">B. Impute QC samples using only QC sample values<a class="anchor" aria-label="anchor" href="#b--impute-qc-samples-using-only-qc-sample-values"></a>
+</h4>
+<p>If you want to impute QC samples separately, using only information
+from other QC samples, you can invert the <code>is_qc</code> vector.
+This excludes all non-QC rows from the imputation calculations and
+applies the pipeline only to the QC samples.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">is_qc</span> <span class="op">&lt;-</span> <span class="va">sample_metadata</span><span class="op">$</span><span class="va">is_qc</span></span>
+<span></span>
+<span><span class="va">imputed_qc_results</span> <span class="op">&lt;-</span> <span class="fu">OmicsProcessing</span><span class="fu">::</span><span class="fu"><a href="../reference/hybrid_imputation.html">hybrid_imputation</a></span><span class="op">(</span></span>
+<span>  <span class="va">log_transformed_df</span>,</span>
+<span>  target_cols <span class="op">=</span> <span class="st">"@"</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"RF-LCMD"</span>,</span>
+<span>  oobe_threshold <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>  is_qc <span class="op">=</span> <span class="op">!</span><span class="va">is_qc</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">imputed_qc_df</span> <span class="op">&lt;-</span> <span class="va">imputed_qc_results</span><span class="op">$</span><span class="va">hybrid_rf_lcmd</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level3">
 <h3 id="customising-the-rf-and-lcmd-controls">Customising the RF and LCMD controls<a class="anchor" aria-label="anchor" href="#customising-the-rf-and-lcmd-controls"></a>
 </h3>
 <p>You can tweak both engines via control lists:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">my_control_RF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  parallelize <span class="op">=</span> <span class="st">"no"</span>,</span>
 <span>  mtry <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">target_cols</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -140,7 +198,7 @@ and returns:</p>
 </h3>
 <p><code>missForest</code> can run in parallel when you register a
 <strong>foreach</strong> backend and set <code>parallelize</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/RevolutionAnalytics/doparallel" class="external-link">doParallel</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>

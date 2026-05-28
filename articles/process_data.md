@@ -61,6 +61,7 @@ can be used independently of
 ### Sample and feature exclusions for \>10% missingness
 
 ``` r
+
 data_processed <- process_data(
   data = data_features, 
   col_samples = "ID_sample", 
@@ -95,6 +96,7 @@ provide a feature meta-data file which contains a column with feature
 names and a column of LOD or equivalent:
 
 ``` r
+
 data_processed <- process_data(
   data = data_features, 
   data_meta_features = data_meta_features, col_features = "ID_feature", col_LOD = "LOD",
@@ -181,6 +183,7 @@ You can perform plate correction by providing sample and feature
 meta-data files.
 
 ``` r
+
 data_processed <- process_data(
   data = data_features, 
   data_meta_samples = data_meta_samples,

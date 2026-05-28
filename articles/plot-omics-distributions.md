@@ -26,12 +26,14 @@ installation, you can locate the installable copy with:
 `build_omics_synthetic()`](https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.md)
 
 ``` r
+
 system.file("scripts", "omics_synthetic.R", package = "OmicsProcessing")
 ```
 
 ## Load example data
 
 ``` r
+
 data("omics_synthetic", package = "OmicsProcessing")
 
 omics_synthetic
@@ -59,6 +61,7 @@ The smallest useful call needs only:
 - a run-order column.
 
 ``` r
+
 p <- OmicsProcessing:::plot_omics_distributions(
   df = omics_synthetic,
   target_cols = "F1",
@@ -86,6 +89,7 @@ If your data contains QC samples, adding `is_qc` helps distinguish
 technical control samples from study samples.
 
 ``` r
+
 p <- OmicsProcessing:::plot_omics_distributions(
   df = omics_synthetic,
   target_cols = "F1",
@@ -108,6 +112,7 @@ If samples were measured across different plates, colouring by plate can
 reveal plate-to-plate shifts.
 
 ``` r
+
 p <- OmicsProcessing:::plot_omics_distributions(
   df = omics_synthetic,
   target_cols = "F1",
@@ -132,6 +137,7 @@ If you also provide a batch column, the function draws dotted vertical
 lines at batch boundaries.
 
 ``` r
+
 p <- OmicsProcessing:::plot_omics_distributions(
   df = omics_synthetic,
   target_cols = "F1",
@@ -157,6 +163,7 @@ You can inspect several features at once by supplying multiple feature
 names.
 
 ``` r
+
 p <- OmicsProcessing:::plot_omics_distributions(
   df = omics_synthetic,
   target_cols = c("F1", "F2", "F3"),
@@ -191,6 +198,7 @@ Typical preparation steps are:
 4.  compare the before/after distributions.
 
 ``` r
+
 target_features <- c("F1", "F2", "F3")
 
 df_imputed <- omics_synthetic
@@ -220,6 +228,7 @@ single feature and then expand to several features once you understand
 the overall behaviour.
 
 ``` r
+
 OmicsProcessing:::plot_omics_distributions(
   df = df_imputed,
   df_comp = df_normalised,
@@ -243,6 +252,7 @@ signal structure plausible.
 This can also plot multiple columns and compare them like so:
 
 ``` r
+
 target_features <- c("F1", "F2", "F3")
 
 OmicsProcessing:::plot_omics_distributions(
@@ -283,6 +293,7 @@ The example data set can be regenerated from the package source.
 `build_omics_synthetic()`](https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.md)
 
 ``` r
+
 source("data-raw/omics_synthetic.R")
 ```
 
@@ -292,6 +303,7 @@ If you want to inspect or modify the generator first, use:
 `build_omics_synthetic()`](https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.md)
 
 ``` r
+
 generated <- build_omics_synthetic(seed = 1)
 
 str(generated$omics_synthetic)

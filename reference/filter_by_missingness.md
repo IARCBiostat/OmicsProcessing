@@ -35,13 +35,19 @@ filter_by_missingness(
 
 - target_cols:
 
-  Character vector of target columns. If NULL, resolved by
+  Character vector of target columns used for missingness \#' filtering.
+  Non-target columns are always retained in the output and are \#' not
+  considered when calculating row or column missingness thresholds. \#'
+  If `NULL`, target columns are resolved automatically using \#'
   [`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.md).
 
 - is_qc:
 
-  Logical vector the same length as `nrow(df)` indicating QC rows
-  (always retained).
+  Logical vector the same length as `nrow(df)` indicating QC \#' rows.
+  Rows where `is_qc` is `TRUE` are always retained in the output and \#'
+  are excluded from all row and column missingness calculations used for
+  \#' filtering thresholds. If `NULL`, all rows are treated as non-QC
+  rows.
 
 - filter_order:
 

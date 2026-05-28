@@ -43,6 +43,7 @@ normalisation across batches or strata.
 ## Quick start
 
 ``` r
+
 # install.packages("remotes")
 remotes::install_github("IARCBiostat/OmicsProcessing")
 library(OmicsProcessing)
@@ -51,6 +52,7 @@ library(OmicsProcessing)
 Run the semi-automated pipeline with three input tables:
 
 ``` r
+
 processed <- process_data(
   data = data_features,
   data_meta_features = data_meta_features,
@@ -68,6 +70,7 @@ processed <- process_data(
 Or stitch together a modular workflow:
 
 ``` r
+
 # Load data
 df <- readr::read_csv("path/to/data")
 
@@ -133,6 +136,7 @@ normalisation with
 [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.md).
 
 ``` r
+
 set.seed(1)
 sample_features <- sample(target_cols, 3)
 
@@ -238,6 +242,8 @@ Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-g
   : PCA-Based Outlier Detection Using LOF
 - [`parse_mass_rt()`](https://iarcbiostat.github.io/OmicsProcessing/reference/parse_mass_rt.md)
   : Parse mass/retention-time strings
+- [`plot_normalization_comparison()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_normalization_comparison.md)
+  : Plot feature values before/after normalization by run order
 - [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.md)
   : Plot feature values by run order for reference and comparison data
 - [`plot_scatter_omics_feature()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_scatter_omics_feature.md)
