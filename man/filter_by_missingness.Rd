@@ -21,9 +21,16 @@ filter_by_missingness(
 
 \item{col_thresh}{Proportion of missing values allowed per column in target columns.}
 
-\item{target_cols}{Character vector of target columns. If NULL, resolved by \code{resolve_target_cols()}.}
+\item{target_cols}{Character vector of target columns used for missingness
+#' filtering. Non-target columns are always retained in the output and are
+#' not considered when calculating row or column missingness thresholds.
+#' If \code{NULL}, target columns are resolved automatically using
+#' \code{resolve_target_cols()}.}
 
-\item{is_qc}{Logical vector the same length as \code{nrow(df)} indicating QC rows (always retained).}
+\item{is_qc}{Logical vector the same length as \code{nrow(df)} indicating QC
+#' rows. Rows where \code{is_qc} is \code{TRUE} are always retained in the output and
+#' are excluded from all row and column missingness calculations used for
+#' filtering thresholds. If \code{NULL}, all rows are treated as non-QC rows.}
 
 \item{filter_order}{One of \code{"iterative"} (default), \code{"col_then_row"}, \code{"row_then_col"}, or \code{"simultaneous"}.
 \itemize{
