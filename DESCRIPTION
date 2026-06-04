@@ -1,7 +1,7 @@
 Package: OmicsProcessing
 Type: Package
 Title: OmicsProcessing
-Version: 1.2.2
+Version: 1.2.3
 Date: 2025-03-03
 Authors@R: c(
     person("Vivian", "Viallon", role = c("aut")),
@@ -43,6 +43,8 @@ Imports:
   grDevices,
   stats
 Remotes:
+  bioc::impute,
+  bioc::pcaMethods,
   JoeRothwell/pcpr2,
   privefl/bigutilsr
 Depends: 
