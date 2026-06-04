@@ -83,6 +83,7 @@
 #' @author
 #' Original version developed by Carlota Castro Espin. Modified by Felix
 #' Boekstegers.
+#' @export
 plot_omics_distributions <- function(
   df,
   target_cols,
