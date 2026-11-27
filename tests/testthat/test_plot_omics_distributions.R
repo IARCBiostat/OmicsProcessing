@@ -196,3 +196,36 @@ testthat::test_that("plot_omics_distributions sets default titles when compariso
 
   testthat::expect_true(inherits(p, "patchwork"))
 })
+
+testthat::test_that("plot_omics_distributions returns plots visibly", {
+  df <- data.frame(
+    injection_order = c(1, 2, 3),
+    qc_flag = c(TRUE, FALSE, FALSE),
+    batch_id = c("b1", "b1", "b2"),
+    plate_id = c("p1", "p1", "p2"),
+    feat1 = c(10, 20, 30)
+  )
+
+  res_single <- withVisible(plot_omics_distributions(
+    df = df,
+    target_cols = "feat1",
+    run_order = "injection_order",
+    is_qc = "qc_flag",
+    batch = "batch_id",
+    plate = "plate_id"
+  ))
+  testthat::expect_true(res_single$visible)
+  testthat::expect_s3_class(res_single$value, "ggplot")
+
+  res_comp <- withVisible(plot_omics_distributions(
+    df = df,
+    df_comp = df,
+    target_cols = "feat1",
+    run_order = "injection_order",
+    is_qc = "qc_flag",
+    batch = "batch_id",
+    plate = "plate_id"
+  ))
+  testthat::expect_true(res_comp$visible)
+  testthat::expect_true(inherits(res_comp$value, "patchwork"))
+})

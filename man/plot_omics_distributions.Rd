@@ -59,7 +59,7 @@ not \code{NULL} and \code{title_comp} is \code{NULL}, the default title is
 samples. QC points are drawn one unit larger. Default is \code{1}.}
 }
 \value{
-Invisibly returns a plot object:
+Returns a plot object:
 \itemize{
 \item If \code{df_comp} is \code{NULL}, a single \code{ggplot2} plot for the reference
 data.
