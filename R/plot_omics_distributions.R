@@ -72,7 +72,7 @@
 #' Non-QC samples are also plotted with lower alpha.
 #'
 #' @return
-#' Invisibly returns a plot object:
+#' Returns a plot object:
 #' \itemize{
 #'   \item If `df_comp` is `NULL`, a single `ggplot2` plot for the reference
 #'   data.
@@ -131,7 +131,7 @@ plot_omics_distributions <- function(
         )
       )
 
-    return(invisible(p_ref))
+    return(p_ref)
   }
 
   df_long_comp <- prepare_df_long(
@@ -170,7 +170,7 @@ plot_omics_distributions <- function(
       )
     )
 
-  invisible(combined_plot)
+  combined_plot
 }
 
 
