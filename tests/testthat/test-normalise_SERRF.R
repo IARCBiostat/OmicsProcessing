@@ -150,3 +150,47 @@ test_that("normalise_SERRF normalises synthetic data with drift", {
   expect_false(any(is.na(result[, c("Feature1", "Feature2", "Feature3")])))
   expect_equal(unique(result$batch), unique(df_test$batch))
 })
+
+test_that("normalise_SERRF caps num_screen_SERRF with a warning instead of looping infinitely", {
+  set.seed(1)
+  df_small <- data.frame(
+    F1 = rnorm(20, 100, 10),
+    F2 = rnorm(20, 200, 15),
+    F3 = rnorm(20, 300, 20),
+    batch = factor(rep(c("B1", "B2"), each = 10))
+  )
+  is_qc_small <- rep(c(rep(TRUE, 4), rep(FALSE, 6)), 2)
+
+  expect_warning(
+    res <- normalise_SERRF(
+      df = df_small,
+      target_cols = c("F1", "F2", "F3"),
+      is_qc = is_qc_small,
+      strata_col = "batch"
+    ),
+    "exceeds the number of available predictor features"
+  )
+  expect_equal(dim(res), dim(df_small))
+  expect_false(anyNA(res[, c("F1", "F2", "F3")]))
+})
+
+test_that("normalise_SERRF validates feature count and num_screen_SERRF", {
+  df_one <- data.frame(
+    F1 = rnorm(10, 100, 10),
+    batch = factor(rep("B1", 10))
+  )
+  expect_error(
+    normalise_SERRF(df_one, target_cols = "F1", is_qc = rep(c(TRUE, FALSE), 5), strata_col = "batch"),
+    "requires at least 2 target features"
+  )
+
+  df_two <- data.frame(
+    F1 = rnorm(10, 100, 10),
+    F2 = rnorm(10, 200, 10),
+    batch = factor(rep("B1", 10))
+  )
+  expect_error(
+    normalise_SERRF(df_two, target_cols = c("F1", "F2"), is_qc = rep(c(TRUE, FALSE), 5), strata_col = "batch", num_screen_SERRF = 0),
+    "positive integer"
+  )
+})

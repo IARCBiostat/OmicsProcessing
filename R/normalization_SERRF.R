@@ -46,12 +46,30 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = N
         ))
     }
 
-    non_numeric <- !vapply(df[, target_cols], is.numeric, logical(1))
+    non_numeric <- !vapply(df[, target_cols, drop = FALSE], is.numeric, logical(1))
     if (any(non_numeric)) {
         stop(
             "All selected feature columns must be numeric. Non-numeric columns: ",
             paste(target_cols[non_numeric], collapse = ", ")
         )
+    }
+
+    if (length(target_cols) < 2L) {
+        stop("`normalise_SERRF()` requires at least 2 target features to fit predictor models.")
+    }
+
+    if (!is.numeric(num_screen_SERRF) || length(num_screen_SERRF) != 1L || is.na(num_screen_SERRF) || num_screen_SERRF < 1) {
+        stop("`num_screen_SERRF` must be a single positive integer.")
+    }
+    num_screen_SERRF <- as.integer(num_screen_SERRF)
+    max_predictors <- length(target_cols) - 1L
+    if (num_screen_SERRF > max_predictors) {
+        warning(
+            "`num_screen_SERRF` (", num_screen_SERRF,
+            ") exceeds the number of available predictor features (", max_predictors,
+            "); capping to ", max_predictors, "."
+        )
+        num_screen_SERRF <- max_predictors
     }
 
     # ---- Initialization ----
@@ -95,12 +113,12 @@ normalise_SERRF <- function(df, target_cols = NULL, is_qc = NULL, strata_col = N
             corr_train_order <- order(abs(corrs_train[[batch]][, j]), decreasing = TRUE)
             corr_target_order <- order(abs(corrs_target[[batch]][, j]), decreasing = TRUE)
 
-            sel_var <- c()
-            l <- num_screen_SERRF
-            while (length(sel_var) < num_screen_SERRF) {
-                sel_var <- intersect(corr_train_order[1:l], corr_target_order[1:l])
+            sel_var <- integer(0)
+            l <- min(num_screen_SERRF, n)
+            while (length(sel_var) < num_screen_SERRF && l <= n) {
+                sel_var <- intersect(corr_train_order[seq_len(l)], corr_target_order[seq_len(l)])
                 sel_var <- sel_var[sel_var != j]
-                l <- l + 1
+                l <- l + 1L
             }
 
             sel_names <- target_cols[sel_var]
