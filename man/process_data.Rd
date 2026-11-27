@@ -36,7 +36,7 @@ process_data(
 \arguments{
 \item{data}{A data frame with the first column as sample IDs and remaining columns containing feature values, where feature IDs are the column names.}
 
-\item{data_meta_features}{A data frame containing metadata for the features, including information such as limit of detection and missingness percentage.}
+\item{data_meta_features}{Optional data frame containing metadata for the features, including information such as limit of detection and missingness percentage. Required for \code{imputation_method = "LOD"}; optional for \code{plate_correction = TRUE} (auto-built from feature column names in \code{data} when omitted).}
 
 \item{data_meta_samples}{A data frame containing metadata for the samples, including information necessary for plate correction and case-control analysis.}
 
