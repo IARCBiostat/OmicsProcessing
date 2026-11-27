@@ -238,7 +238,7 @@ process_data <- function(
   # centre and scale ====
   if (centre_scale) {
     cat("# Centre and scale \n")
-    df1 <- df %>%
+    df <- df %>%
       dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~ scale(.))) %>%
       dplyr::mutate(dplyr::across(dplyr::where(is.numeric), as.numeric))
     LABEL_centre_scale <- TRUE
