@@ -380,7 +380,7 @@ test_that("global imputation kicks in when a stratum has all-NA column (warns wi
   expect_match(warn_msg, "Affected strata and columns:")
 
   # Light sanity checks on result
-  expect_named(res, c("df_filtered","plot_samples_outlier","excluded_ids"))
+  expect_named(res, c("df_filtered", "plot_samples_outlier", "plot_samples_outlier_pc1_pc2", "excluded_ids"))
   expect_true(is.character(res$excluded_ids))
   expect_true(all(res$excluded_ids %in% rownames(df)))
   expect_true(all(rownames(res$df_filtered) %in% rownames(df)))

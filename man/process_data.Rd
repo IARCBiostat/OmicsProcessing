@@ -87,7 +87,13 @@ process_data(
 \item{col_case_control}{A string specifying the column name in \code{data_meta_samples} that contains case-control matching information (e.g., \code{"Match_Caseset"}).}
 }
 \value{
-The processed data is returned and saved as a \code{.rds} file to the specified output directory.
+A list containing the processed feature data (\code{df_features}),
+filtered sample and feature metadata (\code{df_meta_samples},
+\code{df_meta_features}), and excluded IDs (\code{id_exclusions}). When
+\code{outlier = TRUE}, the list also includes the PCA + LOF pair plot
+(\code{plot_samples_outlier}) and the standalone PC1 vs PC2 scatter plot
+(\code{plot_samples_outlier_pc1_pc2}). When \code{save = TRUE}, outputs
+are additionally saved to \code{path_out} and \code{path_outliers}.
 }
 \description{
 This function processes feature data given specified metadata.

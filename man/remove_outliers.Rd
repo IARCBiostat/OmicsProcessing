@@ -34,7 +34,9 @@ are imputed as half the minimum non-missing value—by default \strong{within ea
 \item{restore_missing_values}{Logical; if \code{TRUE}, original \code{NA}s in \code{target_cols} are restored
 after filtering.}
 
-\item{return_ggplots}{Logical; if \code{TRUE}, returns a named list of ggplots per stratum.}
+\item{return_ggplots}{Logical; if \code{TRUE}, returns named lists of per-stratum
+PCA pair plots (\code{plot_samples_outlier}) and standalone PC1 vs PC2 scatter
+plots (\code{plot_samples_outlier_pc1_pc2}).}
 
 \item{strata}{\code{NULL} (default), a single column name in \code{df}, or an external vector of length
 \code{nrow(df)}. When provided, outlier detection is run independently within each stratum
@@ -44,8 +46,9 @@ after filtering.}
 A list with:
 \describe{
 \item{df_filtered}{\code{df} with detected outlier rows removed (QC rows always retained).}
+\item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of PCA pair plots per stratum; otherwise \code{NULL}.}
+\item{plot_samples_outlier_pc1_pc2}{If \code{return_ggplots = TRUE}, a named list of standalone PC1 vs PC2 scatter plots per stratum; otherwise \code{NULL}.}
 \item{excluded_ids}{Character vector of row names removed (union across strata).}
-\item{plot_samples_outlier}{If \code{return_ggplots = TRUE}, a named list of ggplot objects per stratum; otherwise \code{NULL}.}
 }
 }
 \description{

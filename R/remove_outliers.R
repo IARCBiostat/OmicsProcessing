@@ -44,7 +44,9 @@
 #'   (see Missing-data policy).
 #' @param restore_missing_values Logical; if `TRUE`, original `NA`s in `target_cols` are restored
 #'   after filtering.
-#' @param return_ggplots Logical; if `TRUE`, returns a named list of ggplots per stratum.
+#' @param return_ggplots Logical; if `TRUE`, returns named lists of per-stratum
+#'   PCA pair plots (`plot_samples_outlier`) and standalone PC1 vs PC2 scatter
+#'   plots (`plot_samples_outlier_pc1_pc2`).
 #' @param strata `NULL` (default), a single column name in `df`, or an external vector of length
 #'   `nrow(df)`. When provided, outlier detection is run independently within each stratum
 #'   (QC rows excluded within the stratum).
@@ -52,8 +54,9 @@
 #' @return A list with:
 #' \describe{
 #'   \item{df_filtered}{`df` with detected outlier rows removed (QC rows always retained).}
+#'   \item{plot_samples_outlier}{If `return_ggplots = TRUE`, a named list of PCA pair plots per stratum; otherwise `NULL`.}
+#'   \item{plot_samples_outlier_pc1_pc2}{If `return_ggplots = TRUE`, a named list of standalone PC1 vs PC2 scatter plots per stratum; otherwise `NULL`.}
 #'   \item{excluded_ids}{Character vector of row names removed (union across strata).}
-#'   \item{plot_samples_outlier}{If `return_ggplots = TRUE`, a named list of ggplot objects per stratum; otherwise `NULL`.}
 #' }
 #'
 #' @export
@@ -227,6 +230,7 @@ remove_outliers <- function(df,
 
     excluded_ids_all <- character(0)
     plot_list <- if (isTRUE(return_ggplots)) list() else NULL
+    plot_list_pc1_pc2 <- if (isTRUE(return_ggplots)) list() else NULL
 
     # Iterate over levels; detection is done on NON-QC rows within each stratum
     for (lev in levels(strata_vec)) {
@@ -259,6 +263,7 @@ remove_outliers <- function(df,
             # Skip detection for this stratum if too few samples; no rows excluded
             if (isTRUE(return_ggplots)) {
                 plot_list[[as.character(lev)]] <- NULL
+                plot_list_pc1_pc2[[as.character(lev)]] <- NULL
             }
             next
         }
@@ -273,6 +278,7 @@ remove_outliers <- function(df,
 
         if (isTRUE(return_ggplots)) {
             plot_list[[as.character(lev)]] <- outlier_result_s$plot_samples_outlier
+            plot_list_pc1_pc2[[as.character(lev)]] <- outlier_result_s$plot_samples_outlier_pc1_pc2
         }
 
         # Restore NA values is done globally after we know final exclusions
@@ -295,6 +301,7 @@ remove_outliers <- function(df,
     list(
         df_filtered = df_final,
         plot_samples_outlier = if (isTRUE(return_ggplots)) plot_list else NULL,
+        plot_samples_outlier_pc1_pc2 = if (isTRUE(return_ggplots)) plot_list_pc1_pc2 else NULL,
         excluded_ids = excluded_ids_all
     )
 }

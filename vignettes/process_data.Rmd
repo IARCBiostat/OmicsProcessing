@@ -52,9 +52,12 @@ Returns a list of:
 
 1. `df_features`: processed feature dataframe
 2. `df_meta_samples`: filtered sample meta-data
-3. `df_meta_features`: filteres feature meta-data
-4. `plot_samples_outlier`: figure of PCA/LOF analysis
-5. `id_exclusions`: a list of IDs:
+3. `df_meta_features`: filtered feature meta-data
+4. `plot_samples_outlier`: PCA + LOF pair plot (up to the first 10 PCs) with
+   outliers flagged by shape (triangles)
+5. `plot_samples_outlier_pc1_pc2`: standalone PC1 vs PC2 scatter plot with
+   outliers flagged by shape (triangles) and labelled by sample ID
+6. `id_exclusions`: a list of IDs:
    - `id_features_exclude`: feature IDs excluded for extreme sample
      missingness
    - `id_samples_exclude`: sample IDs excluded for extreme sample
@@ -154,9 +157,18 @@ scaling to a mean of 0
 # returning a list of data, outlier plot, and exclusion IDs
 ```
 
-The outlier function creates a PCA plot where samples are coloured by
-their LOF. As an example, we can introduce an outlier sample by
-multiplying all feature values for ID_10 by 1.5:
+The outlier function creates two diagnostic plots where samples are coloured
+by their LOF score and detected outliers are flagged as triangles (shown in
+the legend as `Outlier`):
+
+- `data_processed$plot_samples_outlier`: a pair plot of up to the first 10
+  principal components.
+- `data_processed$plot_samples_outlier_pc1_pc2`: a standalone PC1 vs PC2
+  scatter plot showing percentage variance explained on each axis and
+  labelling detected outlier sample IDs directly on the plot.
+
+As an example, we can introduce an outlier sample by multiplying all feature
+values for ID_10 by 1.5:
 
 ```{r eval=FALSE}
 > data_features_outlier <- data_features %>%
@@ -176,10 +188,14 @@ multiplying all feature values for ID_10 by 1.5:
 ## Imputation using mean 
 # Outlier exclusion using PCA and LOF 
 ## Excluded 1 sample(s)
-## Creating sample outlier plot
+## Creating sample outlier plots
 ### total feature(s) excluded = 44 
 ### total sample(s) excluded = 16 
-# returning a list of data, outlier plot, and exclusion IDs
+# returning a list of data, outlier plots, and exclusion IDs
+
+# View the PCA pair plot or the standalone PC1 vs PC2 scatter plot
+data_processed$plot_samples_outlier
+data_processed$plot_samples_outlier_pc1_pc2
 ```
 
 ![PCA + LOF outlier example](outlier-example.png)
@@ -216,7 +232,7 @@ can be done using `case_control = TRUE` and providing the column name in
 case_control_match`.
 
 The processed data, the IDs for excluded samples and features and the
-reasons for exclusions, and the outlier plot can be saved using `save =
+reasons for exclusions, and the outlier plots can be saved using `save =
 TRUE` and providing a file path for the processed data (`path_out =
 path/to/directory/`) and the exclusion data (`path_outliers =
 path/to/directory/exclusions/`)
