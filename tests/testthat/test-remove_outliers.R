@@ -406,3 +406,33 @@ test_that("per-stratum path runs without triggering global imputation", {
   )
   expect_true(is.list(res))
 })
+
+test_that("default impute_method is NULL and errors when NAs are present", {
+  expect_null(formals(remove_outliers)$impute_method)
+
+  set.seed(1)
+  df <- data.frame(
+    a = c(1, 2, NA, 4, 5),
+    b = c(1, 2, 3, 4, 5)
+  )
+  rownames(df) <- paste0("s", seq_len(nrow(df)))
+
+  expect_error(
+    remove_outliers(df, target_cols = c("a", "b")),
+    "Missing values detected in `target_cols` among non-QC rows"
+  )
+})
+
+test_that("impute_with_half_min works across all numeric columns when cols is NULL", {
+  df <- data.frame(
+    a = c(2, NA, 6),
+    b = c(NA, 10, 20),
+    label = c("x", "y", "z"),
+    stringsAsFactors = FALSE
+  )
+
+  out <- impute_with_half_min(df)
+  expect_equal(out$a, c(2, 1, 6))
+  expect_equal(out$b, c(5, 10, 20))
+  expect_equal(out$label, c("x", "y", "z"))
+})

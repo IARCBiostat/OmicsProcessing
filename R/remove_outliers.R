@@ -38,9 +38,9 @@
 #' @param is_qc Logical vector (length `nrow(df)`) marking QC rows to exclude from detection.
 #'   Defaults to all `FALSE`.
 #' @param method Character; currently supports `"pca-lof-overall"` (default behavior).
-#' @param impute_method `NULL` or `"half-min-value"`. When set, missing values in `target_cols`
+#' @param impute_method `NULL` (default) or `"half-min-value"`. When set, missing values in `target_cols`
 #'   are imputed as half the minimum non-missing value—by default **within each stratum**; if any
-#'#'   stratum has a target column entirely `NA`, imputation is performed **globally** on non-QC rows
+#'   stratum has a target column entirely `NA`, imputation is performed **globally** on non-QC rows
 #'   (see Missing-data policy).
 #' @param restore_missing_values Logical; if `TRUE`, original `NA`s in `target_cols` are restored
 #'   after filtering.
@@ -102,7 +102,7 @@ remove_outliers <- function(df,
                             target_cols = NULL,
                             is_qc = NULL,
                             method = c("pca-lof-overall"),
-                            impute_method = c(NULL, "half-min-value"),
+                            impute_method = NULL,
                             restore_missing_values = TRUE,
                             return_ggplots = FALSE,
                             strata = NULL) {
@@ -330,7 +330,7 @@ impute_with_half_min <- function(df, cols = NULL) {
         df <- df %>%
             dplyr::mutate(
                 dplyr::across(
-                    where(is.numeric),
+                    tidyselect::where(is.numeric),
                     ~ ifelse(is.na(.x), 0.5 * min(.x, na.rm = TRUE), .x)
                 )
             )

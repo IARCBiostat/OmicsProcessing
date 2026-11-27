@@ -9,7 +9,7 @@ remove_outliers(
   target_cols = NULL,
   is_qc = NULL,
   method = c("pca-lof-overall"),
-  impute_method = c(NULL, "half-min-value"),
+  impute_method = NULL,
   restore_missing_values = TRUE,
   return_ggplots = FALSE,
   strata = NULL
@@ -26,9 +26,9 @@ Defaults to all \code{FALSE}.}
 
 \item{method}{Character; currently supports \code{"pca-lof-overall"} (default behavior).}
 
-\item{impute_method}{\code{NULL} or \code{"half-min-value"}. When set, missing values in \code{target_cols}
+\item{impute_method}{\code{NULL} (default) or \code{"half-min-value"}. When set, missing values in \code{target_cols}
 are imputed as half the minimum non-missing value—by default \strong{within each stratum}; if any
-#'   stratum has a target column entirely \code{NA}, imputation is performed \strong{globally} on non-QC rows
+stratum has a target column entirely \code{NA}, imputation is performed \strong{globally} on non-QC rows
 (see Missing-data policy).}
 
 \item{restore_missing_values}{Logical; if \code{TRUE}, original \code{NA}s in \code{target_cols} are restored
