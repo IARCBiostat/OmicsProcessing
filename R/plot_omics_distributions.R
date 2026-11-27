@@ -37,7 +37,7 @@
 #'   `NULL`, all points are assigned to a single plate level `"all"`.
 #'   Default is `NULL`.
 #' @param title Optional title for the reference plot. If `df_comp` is not
-#'   `NULL` and `title_ref` is `NULL`, the default title is `"Reference"`.
+#'   `NULL` and `title` is `NULL`, the default title is `"Reference"`.
 #'   Default is `NULL`.
 #' @param title_comp Optional title for the comparison plot. If `df_comp` is
 #'   not `NULL` and `title_comp` is `NULL`, the default title is

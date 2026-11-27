@@ -65,7 +65,7 @@ run_rf_imputation <- function(df, target_cols, control_RF = list()) {
         verbose = TRUE,
         n_cores = parallel::detectCores()
     )
-    rf_args_full <- modifyList(rf_defaults, control_RF)
+    rf_args_full <- utils::modifyList(rf_defaults, control_RF)
 
     n_cores <- rf_args_full$n_cores
     if (is.null(n_cores) || !is.numeric(n_cores) || n_cores <= 1) {
@@ -93,7 +93,7 @@ run_rf_imputation <- function(df, target_cols, control_RF = list()) {
 
     oob <- rf_result$OOBerror
     if (!is.null(oob) && is.numeric(oob) && length(oob) == length(target_cols)) {
-        feature_oob <- setNames(as.numeric(oob), target_cols)
+        feature_oob <- stats::setNames(as.numeric(oob), target_cols)
     } else if (!is.null(oob) && is.matrix(oob) && nrow(oob) > 0) {
         # fallback if it's a matrix (older missForest versions)
         oob_df <- as.data.frame(oob)
@@ -101,7 +101,7 @@ run_rf_imputation <- function(df, target_cols, control_RF = list()) {
         feature_oob <- oob_df[nrow(oob_df), , drop = TRUE]
     } else {
         warning("No valid OOBError returned from missForest.")
-        feature_oob <- setNames(rep(NA, length(target_cols)), target_cols)
+        feature_oob <- stats::setNames(rep(NA, length(target_cols)), target_cols)
     }
 
     list(imputed = rf_result$ximp, oob = feature_oob)
@@ -138,7 +138,7 @@ run_lcmd_imputation <- function(df, target_cols, control_LCMD = list()) {
     model_selector <- imputeLCMD::model.Selector(data_to_impute)
     model_selector[[1]] <- rep(0, length(model_selector[[1]])) # 0 = MNAR
 
-    imputation_args <- modifyList(
+    imputation_args <- utils::modifyList(
         c(
             list(dataSet.mvs = as.matrix(data_to_impute), model.selector = model_selector),
             default_args
