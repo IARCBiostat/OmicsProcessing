@@ -148,10 +148,12 @@ FUNnormalization_residualMixedModels <- function(df,
         Y1[indNoNAs] <- mean(y) + stats::resid(tochecklmer)
       }
 
-      # Check for collinearity (VIF)
-      cat("## Collinearity (VIF) for:", i, "\n")
-      vif_values <- car::vif(tochecklmer)
-      print(vif_values)
+      # Check for collinearity (VIF requires at least 2 fixed-effect terms)
+      if (length(listFixedInit) >= 2L) {
+        cat("## Collinearity (VIF) for:", i, "\n")
+        vif_values <- car::vif(tochecklmer)
+        print(vif_values)
+      }
 
       # Check the random effects variance
       cat("## Random effects variance for:", i, "\n")
@@ -184,10 +186,12 @@ FUNnormalization_residualMixedModels <- function(df,
         Y1[indNoNAs] <- mean(y) + stats::residuals(tochecklme, type = "pearson") / forrescale
       }
 
-      # Check for collinearity (VIF)
-      cat("## Collinearity (VIF) for:", i, "\n")
-      vif_values <- car::vif(tochecklme)
-      print(vif_values)
+      # Check for collinearity (VIF requires at least 2 fixed-effect terms)
+      if (length(listFixedInit) >= 2L) {
+        cat("## Collinearity (VIF) for:", i, "\n")
+        vif_values <- car::vif(tochecklme)
+        print(vif_values)
+      }
 
       # Check the random effects variance
       cat("## Random effects variance for:", i, "\n")
