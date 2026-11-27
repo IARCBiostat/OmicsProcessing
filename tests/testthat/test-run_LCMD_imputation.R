@@ -10,8 +10,11 @@ test_that("Imputation works with missing values", {
   expect_false(any(is.na(result)))
 })
 
-test_that("Fails if only a few non-NA values or identical values", {
-  df <- data.frame(A = c(1, 2), B = c(NA, 2))
+test_that("Fails if a target column is entirely NA", {
+  df <- data.frame(
+    A = c(NA_real_, NA_real_, NA_real_),
+    B = c(1, 2, 3)
+  )
   expect_error(
     run_lcmd_imputation(df, target_cols = c("A", "B")),
     "LCMD imputation failed"

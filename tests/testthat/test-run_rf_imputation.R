@@ -63,12 +63,19 @@ test_that("switches to sequential mode when n_cores <= 1", {
 })
 
 test_that("returns NA for OOB when not available", {
-    mock_missForest <- function(...) list(ximp = data.frame(a = 1:2, b = 3:4), OOBerror = NULL)
-    with_mock(
-        `missForest::missForest` = mock_missForest,
+    mock_missForest <- function(xmis, maxiter = 10, ntree = 100, variablewise = FALSE,
+                                verbose = FALSE, mtry = 1, parallelize = "no", ...) {
+        list(ximp = data.frame(a = 1:2, b = 3:4), OOBerror = NULL)
+    }
+    testthat::with_mocked_bindings(
+        missForest = mock_missForest,
+        .package = "missForest",
         {
             df <- data.frame(a = c(NA, 2), b = c(3, NA))
-            result <- run_rf_imputation(df, c("a", "b"))
+            expect_warning(
+                result <- run_rf_imputation(df, c("a", "b")),
+                "No valid OOBError returned from missForest"
+            )
             expect_true(all(is.na(result$oob)))
         }
     )
