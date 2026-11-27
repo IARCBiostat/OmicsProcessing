@@ -186,16 +186,18 @@ multiplying all feature values for ID_10 by 1.5:
 
 ### Plate correction
 
-You can perform plate correction by providing sample and feature
-meta-data files.
+You can perform plate correction by providing the feature data and sample
+meta-data files. Supplying `data_meta_features` (and `col_features`) is
+optional when running plate correction alone—if omitted, `process_data()`
+automatically builds the feature list from the columns of `data` (pass
+`data_meta_features` and `col_features` only if you want to restrict
+which features are normalised or also use `"LOD"` imputation):
 
 ```{r eval=FALSE}
 data_processed <- process_data(
   data = data_features, 
   data_meta_samples = data_meta_samples,
   col_samples = "ID_sample", 
-  data_meta_features = data_meta_features,
-  col_features = "ID_feature",
   plate_correction = TRUE, 
   cols_listRandom = c("batch"), 
   cols_listFixedToKeep = c("age"), 

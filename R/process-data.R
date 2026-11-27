@@ -6,7 +6,7 @@
 #' and case-control data handling.
 #'
 #' @param data A data frame with the first column as sample IDs and remaining columns containing feature values, where feature IDs are the column names.
-#' @param data_meta_features A data frame containing metadata for the features, including information such as limit of detection and missingness percentage.
+#' @param data_meta_features Optional data frame containing metadata for the features, including information such as limit of detection and missingness percentage. Required for \code{imputation_method = "LOD"}; optional for \code{plate_correction = TRUE} (auto-built from feature column names in \code{data} when omitted).
 #' @param data_meta_samples A data frame containing metadata for the samples, including information necessary for plate correction and case-control analysis.
 #' @param col_samples A string specifying the column name in \code{data} that contains sample IDs (e.g., \code{"Idepic_Bio"}).
 #' @param col_features A string specifying the column name in \code{data_meta_features} that contains feature IDs, which should match the column names of \code{data} (e.g., \code{"UNIPROT"}).
@@ -208,6 +208,17 @@ process_data <- function(
     if (is.null(cols_listRandom) || is.null(cols_listFixedToKeep)) {
       stop("* Both 'cols_listRandom' and 'cols_listFixedToKeep' must be provided for plate correction.")
     }
+    if (is.null(data_meta_samples) || nrow(df_meta_samples) == 0) {
+      stop("* 'data_meta_samples' must be provided for plate correction.")
+    }
+
+    # Auto-build minimal feature metadata from df columns if not provided
+    if (is.null(data_meta_features) || is.null(col_features)) {
+      meta_features_for_norm <- tibble::tibble(Name = colnames(df))
+    } else {
+      meta_features_for_norm <- df_meta_features %>%
+        dplyr::rename(Name = tidyselect::all_of(col_features))
+    }
 
     # make list for mixed model function
     list <- df %>%
@@ -216,8 +227,7 @@ process_data <- function(
         list(
           data_features = .,
           data_samples = df_meta_samples,
-          data_meta_features = df_meta_features %>%
-            dplyr::rename(Name = tidyselect::all_of(col_features))
+          data_meta_features = meta_features_for_norm
         )
       }
 
