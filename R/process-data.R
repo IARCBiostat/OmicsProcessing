@@ -32,7 +32,13 @@
 #' @param col_case_control A string specifying the column name in \code{data_meta_samples} that contains case-control matching information (e.g., \code{"Match_Caseset"}).
 #' @param centre_scale A logical flag indicating whether to center and scale the data. Default is \code{FALSE}.
 #'
-#' @return The processed data is returned and saved as a `.rds` file to the specified output directory.
+#' @return A list containing the processed feature data (\code{df_features}),
+#'   filtered sample and feature metadata (\code{df_meta_samples},
+#'   \code{df_meta_features}), and excluded IDs (\code{id_exclusions}). When
+#'   \code{outlier = TRUE}, the list also includes the PCA + LOF pair plot
+#'   (\code{plot_samples_outlier}) and the standalone PC1 vs PC2 scatter plot
+#'   (\code{plot_samples_outlier_pc1_pc2}). When \code{save = TRUE}, outputs
+#'   are additionally saved to \code{path_out} and \code{path_outliers}.
 #'
 #' @details
 #' This function performs several data processing steps (in order):
@@ -163,9 +169,11 @@ process_data <- function(
 
     df <- list_outliers$df
     plot_samples_outlier <- list_outliers$plot_samples_outlier
+    plot_samples_outlier_pc1_pc2 <- list_outliers$plot_samples_outlier_pc1_pc2
     id_samples_outlier <- list_outliers$id_samples_outlier
   } else {
     plot_samples_outlier <- NULL
+    plot_samples_outlier_pc1_pc2 <- NULL
     id_samples_outlier <- NULL
   }
 
@@ -285,9 +293,16 @@ process_data <- function(
     ## save outlier figure ====
     if (LABEL_outlier) {
       cat("## saving outlier plots \n")
-      grDevices::tiff(paste0(path_outliers, "plot-outliers_", LABEL, ".tiff"), width = 1200, height = 600, units = "px")
-      print(plot_samples_outlier)
-      grDevices::dev.off()
+      if (!is.null(plot_samples_outlier)) {
+        grDevices::tiff(paste0(path_outliers, "plot-outliers_", LABEL, ".tiff"), width = 1200, height = 600, units = "px")
+        print(plot_samples_outlier)
+        grDevices::dev.off()
+      }
+      if (!is.null(plot_samples_outlier_pc1_pc2)) {
+        grDevices::tiff(paste0(path_outliers, "plot-outliers-pc1-pc2_", LABEL, ".tiff"), width = 800, height = 600, units = "px")
+        print(plot_samples_outlier_pc1_pc2)
+        grDevices::dev.off()
+      }
     }
 
     ## save excluded IDs ====
@@ -302,10 +317,17 @@ process_data <- function(
   }
   # return ====
   if (LABEL_outlier) {
-    cat("# returning a list of data, outlier plot, and exclusion IDs")
+    cat("# returning a list of data, outlier plots, and exclusion IDs")
     df <- df %>%
       tibble::rownames_to_column(col_samples)
-    return(list(df_features = df, df_meta_samples = df_meta_samples, df_meta_features = df_meta_features, plot_samples_outlier = plot_samples_outlier, id_exclusions = id_exclusions))
+    return(list(
+      df_features = df,
+      df_meta_samples = df_meta_samples,
+      df_meta_features = df_meta_features,
+      plot_samples_outlier = plot_samples_outlier,
+      plot_samples_outlier_pc1_pc2 = plot_samples_outlier_pc1_pc2,
+      id_exclusions = id_exclusions
+    ))
   } else {
     cat("# returning a list of data and exclusion IDs")
     df <- df %>%
@@ -784,22 +806,32 @@ transform_data <- function(
 #'
 #' Performs Principal Component Analysis (PCA) on a data frame and identifies
 #' sample outliers using the Local Outlier Factor (LOF) method. Optionally
-#' returns a `ggplot2` pair plot of the PCA scores coloured by LOF. Samples
-#' detected as outliers are removed from the returned data.
+#' returns a pair plot of up to the first 10 principal components and a
+#' standalone PC1 vs PC2 scatter plot, both coloured by LOF with outliers
+#' flagged by point shape (triangles). Samples detected as outliers are removed
+#' from the returned data.
 #'
 #' @param df A data frame with samples in rows and features in columns.
 #'           Must not contain missing values.
-#' @param return_ggplot Logical; if `TRUE`, returns a `ggplot2` pair plot
-#'        highlighting outliers.
+#' @param return_ggplot Logical; if `TRUE`, returns the PCA pair plot and
+#'        standalone PC1 vs PC2 scatter plot highlighting outliers.
 #' @param verbose Logical; if `TRUE`, prints progress messages.
 #'
 #' @return A list with the following elements:
 #' \describe{
 #'   \item{df}{Filtered data frame with outliers removed. If missing values
 #'             are present, the original input is returned unchanged.}
-#'   \item{plot_samples_outlier}{A `ggplot2` object showing PCA and LOF scores,
-#'                               or `NULL` if `return_ggplot = FALSE` or if
-#'                               missing values were found.}
+#'   \item{plot_samples_outlier}{A `GGally::ggpairs` plot object showing PCA
+#'                               pairs coloured by LOF with outliers flagged as
+#'                               triangles, or `NULL` if `return_ggplot = FALSE`,
+#'                               fewer than 2 PCs are available, or missing
+#'                               values were found.}
+#'   \item{plot_samples_outlier_pc1_pc2}{A `ggplot2` scatter plot of PC1 vs PC2
+#'                                       coloured by LOF with outliers flagged
+#'                                       as triangles and labelled by sample ID,
+#'                                       or `NULL` if `return_ggplot = FALSE`,
+#'                                       fewer than 2 PCs are available, or
+#'                                       missing values were found.}
 #'   \item{id_samples_outlier}{A character vector of sample IDs (rownames)
 #'                             identified as outliers, or `NULL` if skipped.}
 #' }
@@ -811,6 +843,7 @@ transform_data <- function(
 #' result <- outlier_pca_lof(df = my_data)
 #' head(result$df)
 #' print(result$plot_samples_outlier)
+#' print(result$plot_samples_outlier_pc1_pc2)
 #' result$id_samples_outlier
 #' }
 outlier_pca_lof <- function(
@@ -824,58 +857,148 @@ outlier_pca_lof <- function(
     cat("* There are missing values in the data; PCA is not possible with missing data\n")
     cat("* Outlier exclusions will be skipped and the label will be changed to reflect this\n")
     # Return without outlier information if there are missing values
-    return(list(df = df, plot_samples_outlier = NULL, id_samples_outlier = NULL))
+    return(list(
+      df = df,
+      plot_samples_outlier = NULL,
+      plot_samples_outlier_pc1_pc2 = NULL,
+      id_samples_outlier = NULL
+    ))
   } else {
     # Step 1: PCA sample-wise
     pca_samples <- stats::prcomp(x = df, rank. = 10)
+    total_var <- sum(pca_samples$sdev^2)
+    pca_var_pct <- if (total_var > 0) {
+      round(100 * (pca_samples$sdev^2 / total_var), 1)
+    } else {
+      rep(0, length(pca_samples$sdev))
+    }
+
     data_samples_analysis <- tibble::as_tibble(pca_samples$x) %>%
       tibble::add_column(id = rownames(df), .before = 1) %>%
       tibble::column_to_rownames(var = "id")
 
     # Step 2: Sample Outlier Detection
     llof_samples <- bigutilsr::LOF(data_samples_analysis) # Compute distances using local outlier factor
-    outliers_samples <- which(llof_samples > bigutilsr::tukey_mc_up(llof_samples)) # Identify outlier threshold
-    id_samples_outlier <- rownames(data_samples_analysis[outliers_samples, ])
+    lof_thresh <- bigutilsr::tukey_mc_up(llof_samples) # Identify outlier threshold
+    outliers_samples <- which(llof_samples > lof_thresh)
+    id_samples_outlier <- rownames(data_samples_analysis)[outliers_samples]
     if (verbose) {
       cat(paste0("## Excluded ", length(id_samples_outlier), " sample(s)\n"))
     }
 
-
-    # Step 3: Plot for sample outliers
-    if (verbose) {
-      cat("## Creating sample outlier plot\n")
-    }
+    # Step 3: Plots for sample outliers
     data_samples_analysis$llof <- llof_samples
-    if (return_ggplot) {
-      plot_samples_outlier <- GGally::ggpairs(data_samples_analysis,
+    data_samples_analysis$outlier_status <- factor(
+      ifelse(seq_len(nrow(data_samples_analysis)) %in% outliers_samples, "Outlier", "Inlier"),
+      levels = c("Inlier", "Outlier")
+    )
+    data_samples_analysis$sample_label <- ifelse(
+      data_samples_analysis$outlier_status == "Outlier",
+      rownames(data_samples_analysis),
+      ""
+    )
+
+    n_pcs <- min(10L, ncol(pca_samples$x))
+    if (return_ggplot && n_pcs >= 2L) {
+      if (verbose) {
+        cat("## Creating sample outlier plots\n")
+      }
+      plot_samples_outlier <- GGally::ggpairs(
+        data_samples_analysis,
         upper = list(continuous = "blank"),
         diag = list(continuous = "blankDiag"),
-        lower = list(continuous = "points"),
-        columns = 1:10,
-        mapping = ggplot2::aes(color = llof),
-        legend = 11
+        lower = list(continuous = GGally::wrap("points", size = 1.8, alpha = 0.85)),
+        columns = seq_len(n_pcs),
+        mapping = ggplot2::aes(color = llof, shape = outlier_status),
+        legend = c(2, 1)
       ) +
         ggplot2::scale_color_viridis_c(direction = -1, option = "F") +
+        ggplot2::scale_shape_manual(
+          name = NULL,
+          values = c(Inlier = 16, Outlier = 17),
+          breaks = "Outlier",
+          labels = "Outlier"
+        ) +
+        ggplot2::guides(
+          color = ggplot2::guide_colorbar(order = 1),
+          shape = ggplot2::guide_legend(order = 2)
+        ) +
         ggplot2::labs(
-          color = paste("Local outlier factor:", round(bigutilsr::tukey_mc_up(llof_samples), 2)),
-          title = paste0("Samples to exclude: ", length(outliers_samples))
+          color = paste0("Local outlier factor (thresh: ", round(lof_thresh, 2), ")"),
+          title = paste0("PCA + LOF outlier detection - Samples to exclude: ", length(outliers_samples))
         ) +
         ggplot2::theme_minimal() +
         ggplot2::theme(
-          strip.background = ggplot2::element_rect(fill = "grey"),
+          strip.background = ggplot2::element_rect(fill = "grey85", colour = NA),
           legend.position = "bottom",
-          panel.spacing = grid::unit(1, "lines")
+          legend.box = "horizontal",
+          panel.spacing = grid::unit(0.8, "lines")
         )
+
+      plot_samples_outlier_pc1_pc2 <- ggplot2::ggplot(
+        data_samples_analysis,
+        ggplot2::aes(
+          x = PC1,
+          y = PC2,
+          color = llof,
+          shape = outlier_status
+        )
+      ) +
+        ggplot2::geom_point(ggplot2::aes(size = outlier_status), alpha = 0.85) +
+        ggplot2::scale_color_viridis_c(direction = -1, option = "F") +
+        ggplot2::scale_shape_manual(
+          name = NULL,
+          values = c(Inlier = 16, Outlier = 17),
+          breaks = "Outlier",
+          labels = "Outlier"
+        ) +
+        ggplot2::scale_size_manual(values = c(Inlier = 2.2, Outlier = 3.8), guide = "none") +
+        ggplot2::guides(
+          color = ggplot2::guide_colorbar(order = 1),
+          shape = ggplot2::guide_legend(order = 2, override.aes = list(size = 3.5))
+        ) +
+        ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = 0.14)) +
+        ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = 0.12)) +
+        ggplot2::labs(
+          x = paste0("PC1 (", pca_var_pct[1], "% variance)"),
+          y = paste0("PC2 (", pca_var_pct[2], "% variance)"),
+          color = paste0("LOF (thresh: ", round(lof_thresh, 2), ")"),
+          title = paste0("PC1 vs PC2 - Samples to exclude: ", length(outliers_samples))
+        ) +
+        ggplot2::theme_minimal(base_size = 12) +
+        ggplot2::theme(
+          legend.position = "bottom",
+          legend.box = "horizontal"
+        )
+
+      if (length(outliers_samples) > 0L) {
+        outlier_rows <- data_samples_analysis[data_samples_analysis$outlier_status == "Outlier", , drop = FALSE]
+        plot_samples_outlier_pc1_pc2 <- plot_samples_outlier_pc1_pc2 +
+          ggplot2::geom_text(
+            data = outlier_rows,
+            ggplot2::aes(label = sample_label),
+            vjust = -1.0,
+            size = 3.5,
+            fontface = "bold",
+            show.legend = FALSE
+          )
+      }
     } else {
       plot_samples_outlier <- NULL
-    }
-    # Step 4: Exclude Outliers
-    if (length(outliers_samples) > 0) {
-      df <- df[!rownames(df) %in% id_samples_outlier, ] # Filter data
+      plot_samples_outlier_pc1_pc2 <- NULL
     }
 
-    # Conditionally return df_meta_samples only if it's not NULL
-    return(list(df = df, plot_samples_outlier = plot_samples_outlier, id_samples_outlier = id_samples_outlier))
+    # Step 4: Exclude Outliers
+    if (length(outliers_samples) > 0) {
+      df <- df[!rownames(df) %in% id_samples_outlier, , drop = FALSE] # Filter data
+    }
+
+    return(list(
+      df = df,
+      plot_samples_outlier = plot_samples_outlier,
+      plot_samples_outlier_pc1_pc2 = plot_samples_outlier_pc1_pc2,
+      id_samples_outlier = id_samples_outlier
+    ))
   }
 }
 

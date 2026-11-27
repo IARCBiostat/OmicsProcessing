@@ -58,8 +58,11 @@ stratum**, and results are then merged:
 * The function returns the union of outlier sample IDs across strata and
   removes only those from the non-QC portion before recombining with QC
   rows.
-* When `return_ggplots = TRUE`, you’ll get a **named list of per-stratum
-  plots** in `outlier_results$plot_samples_outlier`.
+* When `return_ggplots = TRUE`, you'll get **named lists of per-stratum
+  plots** in both `outlier_results$plot_samples_outlier` (PCA pair plots) and
+  `outlier_results$plot_samples_outlier_pc1_pc2` (standalone PC1 vs PC2 scatter
+  plots with labelled outlier sample IDs). In both plots, samples are coloured
+  by LOF score and detected outliers are flagged by shape (triangles).
 
 **Examples**
 
@@ -79,6 +82,10 @@ res_batch <- OmicsProcessing::remove_outliers(
   strata = "batch",
   return_ggplots = TRUE
 )
+
+## Inspect the PCA pair plot or standalone PC1 vs PC2 plot for a stratum
+res_batch$plot_samples_outlier[[1]]
+res_batch$plot_samples_outlier_pc1_pc2[[1]]
 
 ## 3) Stratify by an external vector
 grp <- ifelse(df$center %in% c("C1","C2"), "C12", "C3")
@@ -111,19 +118,23 @@ Practical constraints:
 * Very high **p/n ratios** (many more features than samples) can make PCA
   and LOF unstable. Consider filtering features before running this
   step.
-* **ggplot generation requires at least 10 feature columns** in
-  `target_cols`. If fewer than 10 are provided, plots cannot be
-  generated; in such cases you should leave `return_ggplots = FALSE`
-  (the default).
+* **ggplot generation requires at least 2 feature columns** in
+  `target_cols` (up to 10 principal components are shown in the pair plot).
+  If fewer than 2 are provided, plots cannot be generated and are returned as
+  `NULL`.
 
 **Returned values**
 
 * `df_filtered`: input `df` with detected outlier **non-QC** rows
   removed (QC rows always retained).
-* `excluded_ids`: vector of removed row names (union across strata).
-* `plot_samples_outlier`: `NULL` or a **named list of ggplot objects**
+* `plot_samples_outlier`: `NULL` or a **named list of PCA pair plots**
   (one per stratum) when `return_ggplots = TRUE` *and*
-  `length(target_cols) >= 10`.
+  `length(target_cols) >= 2`. Detected outliers are flagged as triangles.
+* `plot_samples_outlier_pc1_pc2`: `NULL` or a **named list of standalone PC1
+  vs PC2 scatter plots** (one per stratum) when `return_ggplots = TRUE` *and*
+  `length(target_cols) >= 2`, with detected outliers flagged as triangles and
+  labelled by sample ID.
+* `excluded_ids`: vector of removed row names (union across strata).
 
 ### How LOF works in PCA space (extra detail)
 

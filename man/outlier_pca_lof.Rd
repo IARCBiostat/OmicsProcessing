@@ -10,8 +10,8 @@ outlier_pca_lof(df, return_ggplot = TRUE, verbose = TRUE)
 \item{df}{A data frame with samples in rows and features in columns.
 Must not contain missing values.}
 
-\item{return_ggplot}{Logical; if \code{TRUE}, returns a \code{ggplot2} pair plot
-highlighting outliers.}
+\item{return_ggplot}{Logical; if \code{TRUE}, returns the PCA pair plot and
+standalone PC1 vs PC2 scatter plot highlighting outliers.}
 
 \item{verbose}{Logical; if \code{TRUE}, prints progress messages.}
 }
@@ -20,9 +20,14 @@ A list with the following elements:
 \describe{
 \item{df}{Filtered data frame with outliers removed. If missing values
 are present, the original input is returned unchanged.}
-\item{plot_samples_outlier}{A \code{ggplot2} object showing PCA and LOF scores,
-or \code{NULL} if \code{return_ggplot = FALSE} or if
-missing values were found.}
+\item{plot_samples_outlier}{A \code{GGally::ggpairs} plot object showing PCA
+pairs coloured by LOF with outliers flagged as triangles, or \code{NULL} if
+\code{return_ggplot = FALSE}, fewer than 2 PCs are available, or missing
+values were found.}
+\item{plot_samples_outlier_pc1_pc2}{A \code{ggplot2} scatter plot of PC1 vs PC2
+coloured by LOF with outliers flagged as triangles and labelled by sample ID,
+or \code{NULL} if \code{return_ggplot = FALSE}, fewer than 2 PCs are available,
+or missing values were found.}
 \item{id_samples_outlier}{A character vector of sample IDs (rownames)
 identified as outliers, or \code{NULL} if skipped.}
 }
@@ -30,14 +35,17 @@ identified as outliers, or \code{NULL} if skipped.}
 \description{
 Performs Principal Component Analysis (PCA) on a data frame and identifies
 sample outliers using the Local Outlier Factor (LOF) method. Optionally
-returns a \code{ggplot2} pair plot of the PCA scores coloured by LOF. Samples
-detected as outliers are removed from the returned data.
+returns a pair plot of up to the first 10 principal components and a
+standalone PC1 vs PC2 scatter plot, both coloured by LOF with outliers
+flagged by point shape (triangles). Samples detected as outliers are removed
+from the returned data.
 }
 \examples{
 \dontrun{
 result <- outlier_pca_lof(df = my_data)
 head(result$df)
 print(result$plot_samples_outlier)
+print(result$plot_samples_outlier_pc1_pc2)
 result$id_samples_outlier
 }
 }
