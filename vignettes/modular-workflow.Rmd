@@ -1,0 +1,212 @@
+---
+title: "Complete modular workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete modular workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+The modular workflow lets you compose individual processing functions to
+suit your study design and analytical platform. It is designed primarily
+for **untargeted LC-MS metabolomics** data with interspersed pooled QC
+samples, run-order drift, left-censored and random missingness, and
+co-eluting `"mass@rt"` features.
+
+This vignette walks through the complete sequence from raw intensities to
+clustered, normalised features in one place. Each step links to its
+dedicated module vignette for deeper parameter guidance and edge-case
+examples:
+
+1. **Filter by missingness** — [`filter_by_missingness()`](data-filtering.html)
+2. **Detect & remove sample outliers** — [`remove_outliers()`](outlier-removal.html)
+3. **Log-transform intensities** — [`log1p()`](log-transformation.html)
+4. **Impute missing values (RF + LCMD)** — [`hybrid_imputation()`](hybrid-imputation.html)
+5. **Correct drift & batch effects (SERRF)** — [`normalise_SERRF()`](serrf-normalisation.html)
+6. **Inspect before/after run-order profiles** — [`plot_omics_distributions()`](plot-omics-distributions.html)
+7. **Cluster co-eluting features by retention time** — [`cluster_features_by_retention_time()`](feature-clustering.html)
+
+## Preparing the example data
+
+All modular functions operate directly on a single flat data frame where
+rows are samples (study samples plus pooled QC rows) and columns contain
+sample metadata alongside numeric feature columns.
+
+We use the built-in untargeted LC-MS metabolomics dataset
+(`example_metabolomics`): 216 rows (180 study samples in 90 matched
+case-control pairs + 36 pooled `"sQC"` samples across 3 batches and 6
+plates) and 30 raw positive-intensity features named in `"mass@rt"`
+format:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+dim(df)
+table(df$batch, df$sample_type)
+```
+
+## Step 1: Filter by missingness
+
+Remove features and non-QC samples exceeding 50% missingness using
+iterative filtering. QC rows (`is_qc = TRUE`) are excluded from
+missingness calculations and always retained in the output. See
+[Data filtering](data-filtering.html) for filtering order options
+(`"iterative"`, `"simultaneous"`, `"col_then_row"`, `"row_then_col"`).
+
+```{r step1-filter}
+df_filtered <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+dim(df_filtered)
+```
+
+## Step 2: Detect and remove outlier samples
+
+Detect outlying non-QC samples in PCA space using Local Outlier Factor
+(LOF), temporarily imputing missing values with half the column minimum
+and restoring original `NA`s afterward. Because `example_metabolomics`
+has batch offsets before normalisation, stratifying by `"batch"`
+identifies outliers cleanly within each batch (catching all three
+injected per-batch outliers). See [Outlier removal](outlier-removal.html)
+for PCA + LOF diagnostics and unstratified vs stratified options.
+
+```{r step2-outliers}
+outliers <- remove_outliers(
+  df_filtered,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df_filtered$sample_type),
+  strata = "batch",
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
+)
+
+df_clean <- outliers$df_filtered
+outliers$excluded_ids
+dim(df_clean)
+```
+
+## Step 3: Log-transform features
+
+Apply `log1p()` across all `"mass@rt"` feature columns to reduce
+right-skewness while handling zeros safely. See
+[Log transformation](log-transformation.html) for details.
+
+```{r step3-log}
+df_clean <- df_clean %>%
+  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
+```
+
+## Step 4: Hybrid imputation (RF + LCMD)
+
+Impute missing values in non-QC samples by fitting Random Forest
+(`missForest`) and Left-Censored Missing Data (`imputeLCMD`), selecting
+RF for features with OOB error below `oobe_threshold = 0.1` and LCMD
+otherwise. QC rows are excluded from model fitting via `is_qc`. See
+[Hybrid imputation](hybrid-imputation.html) for QC imputation strategies
+and engine control options.
+
+```{r step4-imputation}
+set.seed(42)
+
+imp_res <- hybrid_imputation(
+  df_clean,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df_clean$sample_type),
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  control_RF = list(verbose = FALSE)
+)
+
+df_imputed <- imp_res$hybrid_rf_lcmd
+table(method_used = ifelse(imp_res$oob < 0.1, "RF", "LCMD"))
+```
+
+## Step 5: Batch and drift normalisation with SERRF
+
+Normalise technical run-order drift and batch/plate shifts using SERRF
+trained on pooled QC samples within each batch (`strata_col = "batch"`).
+See [SERRF normalisation](serrf-normalisation.html) for tuning guidance.
+
+```{r step5-serrf}
+df_normalised <- normalise_SERRF(
+  df_imputed,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df_imputed$sample_type),
+  strata_col = "batch"
+)
+```
+
+## Step 6: Visual check before and after normalisation
+
+Inspect a random sample of three features across run order before and
+after SERRF normalisation with `plot_omics_distributions()` (note that it
+returns the plot invisibly, so assign and print `p`). See
+[Normalisation plot comparison](plot-omics-distributions.html) for
+progressive plotting layers and interpretation tips.
+
+```{r step6-plot, fig.width = 9, fig.height = 6.5}
+target_cols <- resolve_target_cols(df_normalised, "@")
+
+set.seed(1)
+sample_features <- sample(target_cols, 3)
+
+p <- plot_omics_distributions(
+  df = df_imputed,
+  df_comp = df_normalised,
+  target_cols = sample_features,
+  run_order = "run_order",
+  is_qc = "is_qc",
+  batch = "batch",
+  plate = "plate",
+  title = "Before normalisation",
+  title_comp = "After normalisation"
+)
+p
+```
+
+## Step 7: Cluster co-eluting features by retention time
+
+Group features with similar retention times (`rt_height = 0.07`) and
+summarise highly correlated co-eluting features (e.g., adducts or
+isotopes) into synthetic PC1 representatives while excluding QC rows
+from the output. See [Feature clustering](feature-clustering.html) for
+both `"correlations"` and `"scores"` summarisation methods.
+
+```{r step7-clustering}
+clusters <- cluster_features_by_retention_time(
+  df = df_normalised,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df_normalised$sample_type),
+  rt_height = 0.07,
+  method = "correlations",
+  cut_height = 0.26,
+  corr_thresh = 0.75
+)
+
+dim(clusters$clustered_df)
+clusters$representatives_map
+```
+
+The resulting `clusters$clustered_df` contains study samples with all
+metadata columns preserved alongside the final set of normalised,
+deduplicated features ready for downstream statistical analysis.

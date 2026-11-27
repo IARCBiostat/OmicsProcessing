@@ -14,69 +14,147 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Preparing the example data
+
+> **Prerequisites:** use **imputed and normalised** data before applying
+> RT clustering. This procedure assumes no missing values and benefits
+> from stabilised intensity profiles.
+
+Here we prepare `imputed_df` (pre-normalisation) and `normalised_df`
+(SERRF-normalised) from `example_metabolomics` by applying missingness
+filtering, outlier removal, log transformation, hybrid imputation, and
+SERRF normalisation:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+filtered_df <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+clean_df <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
+)$df_filtered %>%
+  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
+
+imputed_df <- hybrid_imputation(
+  clean_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", clean_df$sample_type),
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  control_RF = list(verbose = FALSE)
+)$hybrid_rf_lcmd
+
+normalised_df <- normalise_SERRF(
+  imputed_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", imputed_df$sample_type),
+  strata_col = "batch"
+)
+```
+
 ## Cluster features by retention time
 
-`cluster_features_by_retention_time()` groups features that elute together, based on similar retention times (RTs). It returns a data frame that includes all unclustered features **unchanged**, plus **one representative per cluster**. The `representatives_map` output shows which original features each representative corresponds to. See the function reference for further details:
+`cluster_features_by_retention_time()` groups features that elute
+together based on similar retention times (RTs), extracted from
+`"mass@rt"` feature names. It returns a data frame that includes all
+non-target metadata columns and unclustered features **unchanged**, plus
+**one representative per cluster**. The `representatives_map` output
+records which original features each representative corresponds to. See
+the function reference for details:
 [`cluster_features_by_retention_time()`](../reference/cluster_features_by_retention_time.html).
 
-> **Prerequisites:** use **imputed and normalised** data before applying RT clustering. This procedure assumes no missing values and benefits from stabilised intensity profiles.
+The `is_qc` argument excludes QC-designated rows from clustering and
+drops them from the returned `clustered_df` so pooled QC profiles do not
+bias biological feature correlations. Leave `is_qc = NULL` only if QC
+samples have already been removed from `df`.
 
-The `is_qc` argument prevents QC-designated rows from contributing to the clustering. Typically, `is_qc` should be set to `NULL` so that all samples contribute.
+### How representatives are selected with the `"scores"` method
 
-### How representatives are selected with the "scores" method
-
-The "scores" method clusters features by RT and returns **one representative per RT cluster** based on the input score. It employs
-[`get_features_representatives_based_on_scores()`](../reference/get_features_representatives_based_on_scores.html). This helper is called internally by `cluster_features_by_retention_time()`; you do not need to invoke it explicitly.
+The `"scores"` method clusters features by RT and selects **one existing
+feature per correlated subcluster** based on a user-supplied score
+vector. Internally it calls
+[`get_features_representatives_based_on_scores()`](../reference/get_features_representatives_based_on_scores.html).
 
 For each RT-based cluster:
 
 * Single-feature clusters: the feature is returned unchanged.
-* Multi-feature clusters: the feature with the **highest score** is selected as the representative, and `representatives_map` records all members that it represents.
+* Multi-feature clusters: features are subclustered using `corr_thresh`,
+  the feature with the **highest score** is selected as the
+  representative, and `representatives_map` records all members it
+  represents.
 
 ### Example 1: Score-based representatives (mean intensity before normalisation)
 
-```{r eval=FALSE}
-# Assume `imputed_df` is your imputed, SERRF-normalised data
-# Use pre-normalisation means as scores
-target_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
-scores <- colMeans(pre_normalised_df[, target_cols])
+```{r cluster-scores}
+target_cols <- resolve_target_cols(normalised_df, "@")
+is_qc <- grepl("^sQC", normalised_df$sample_type)
 
-res_scores <- OmicsProcessing::cluster_features_by_retention_time(
+# Use pre-normalisation mean intensities across study samples as scores
+scores <- colMeans(imputed_df[!is_qc, target_cols])
+
+res_scores <- cluster_features_by_retention_time(
   df = normalised_df,
   target_cols = target_cols,
+  is_qc = is_qc,
   rt_height = 0.07,
   method = "scores",
   corr_thresh = 0.75,
   scores = scores
 )
 
-clustered_df <- res_scores$clustered_df     # original features + representatives
+clustered_df <- res_scores$clustered_df     # metadata + unclustered + representatives
 rep_map <- res_scores$representatives_map   # mapping of representatives to raw features
+
+dim(clustered_df)
+rep_map
 ```
 
-The `rt_height` parameter defines the maximum RT span for forming a cluster: features whose RTs differ by less than this value are grouped. Within each RT‑based group, pairwise correlations between features are calculated, and the features are further partitioned into correlation‑based subclusters. The supplied `scores` determine the representative feature for each subcluster. In this example, pre-normalisation mean intensities serve as scores; consequently, each representative is the feature with the highest mean intensity before normalisation. 
+The `rt_height` parameter defines the maximum RT span for forming a
+cluster: features whose RTs differ by less than this value are grouped.
+Within each RT-based group, pairwise correlations between features are
+calculated and partitioned at `corr_thresh`. The supplied `scores`
+determine the representative feature for each subcluster (here, the
+feature with the highest pre-normalisation mean intensity).
 
-The `representatives_map` lists representatives as names, with vectors of raw feature names as their values.  In effect, features with similar retention times are identified, and among those with high correlation, the feature with the highest pre‑normalisation mean intensity is selected as the representative.
+### How representatives are selected with the `"correlations"` method
 
-### How representatives are selected with the correlation method
-
-With `method = "correlations"`, the features are first grouped together by the 
-`rt_height` (like the scores method). Then, a secondary correlation-based clustering step is applied within each RT-defined group. Clustering behaviour is governed by `corr_thresh` and `cut_height`:
+With `method = "correlations"`, features are first grouped by
+`rt_height`, and then summarised within each RT group according to
+`corr_thresh` and `cut_height`:
 
 * RT cluster of size 1: retained unchanged.
 * RT cluster of size 2:
-
-  * If `|corr| ≥ corr_thresh`, the pair is summarised as a synthetic PC1 feature.
+  * If `|corr| >= corr_thresh`, the pair is summarised as a synthetic
+    PC1 feature (`SynthFeat@*`).
   * Otherwise, both features are retained.
-* RT cluster of size ≥3:
-  hierarchical clustering (ClustOfVar) is cut at `cut_height`, and each resulting sub-cluster is summarised as a synthetic PC1, aligned to the first feature in that sub-cluster.
+* RT cluster of size ≥ 3: hierarchical clustering (`ClustOfVar`) is cut
+  at `cut_height`, and each resulting multi-feature subcluster is
+  summarised as a synthetic PC1 oriented to have positive correlation
+  with its first feature.
 
-In all cases, the `representatives_map` lists synthetic feature names and records the raw features incorporated into each synthetic representative.
+In all cases, `representatives_map` maps each synthetic feature name to
+the original features incorporated into it.
 
 ### Example 2: Correlation-based summarisation within RT clusters
 
-```{r eval=FALSE}
-res_corr <- OmicsProcessing::cluster_features_by_retention_time(
+```{r cluster-correlations}
+res_corr <- cluster_features_by_retention_time(
   df = normalised_df,
   target_cols = "@",
   is_qc = grepl("^sQC", normalised_df$sample_type),
@@ -88,11 +166,20 @@ res_corr <- OmicsProcessing::cluster_features_by_retention_time(
 
 clustered_df_corr <- res_corr$clustered_df
 rep_map_corr <- res_corr$representatives_map
+
+dim(clustered_df_corr)
+rep_map_corr
 ```
 
 ### Tips
 
-* Set `rt_height` to reflect the instrument’s RT precision; smaller values produce more, and tighter, RT clusters.
-* For `"scores"`, ensure that `scores` is a **named numeric vector** aligned with `target_cols`. Using pre-normalisation means is a simple and efficient strategy.
-* For `"correlations"`, tune `cut_height` and `corr_thresh` to adjust the merging stringency for correlated features.
-* Always inspect the `representatives_map` to understand how each representative relates to original features, particularly for reporting, audit trails, or sensitivity analyses.
+* Set `rt_height` to reflect the instrument’s RT precision; smaller
+  values produce tighter RT clusters.
+* For `"scores"`, ensure that `scores` is a **named numeric vector**
+  aligned with `target_cols`. Using pre-normalisation mean intensities
+  across study samples is a simple, interpretable choice.
+* For `"correlations"`, tune `cut_height` and `corr_thresh` to adjust
+  the merging stringency for correlated features.
+* Always inspect `representatives_map` to trace each representative back
+  to its original features for reporting, audit trails, or sensitivity
+  analyses.

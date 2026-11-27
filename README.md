@@ -1,25 +1,43 @@
 # OmicsProcessing
 
-Pre-analysis processing for metabolomics and proteomics: missingness filtering, outlier handling, imputation, transformation, matched case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata. [Please visit our website for more information and vignettes](https://iarcbiostat.github.io/OmicsProcessing/index.html)
+Pre-analysis processing for metabolomics and proteomics data: missingness filtering, PCA + LOF outlier detection, transformation, imputation (LOD, classical, or hybrid RF + LCMD), matched case-control handling, linear mixed-model plate/batch correction, QC-based SERRF normalisation, run-order diagnostics, and retention-time feature clustering. [Visit the package website for full documentation and vignettes.](https://iarcbiostat.github.io/OmicsProcessing/index.html)
 
 ## Choose your workflow
 
-### Semi-automated pipeline (`process_data()`)
+`OmicsProcessing` offers two complementary workflows depending on your assay type and how much step-by-step control you need:
 
-- End-to-end wrapper that can filter on missingness, impute, transform, remove outliers (PCA + LOF), handle matched case-control designs, correct for plate/batch effects, and centre/scale.
-- Takes three data frames (feature data, feature metadata, sample metadata) and returns processed data plus exclusion IDs and PCA/LOF plots.
-- Full walk-through: [Semi-automated pipeline](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html).
+| | **Pipeline (`process_data()`)** | **Modules (step-by-step)** |
+|---|---|---|
+| **Best for** | Targeted proteomics (e.g., Olink) & plate-based multi-batch studies | Untargeted LC-MS metabolomics with pooled QC samples |
+| **Input format** | Three tables: feature data, feature metadata, sample metadata | Single flat data frame (samples + `"sQC"` rows, metadata + `"mass@rt"` features) |
+| **Missingness & imputation** | Threshold exclusions; `LOD`, `1/5th`, `KNN`, `PPCA`, `mean`, `median`, `RF`, `LCMD` | QC-aware iterative filtering; hybrid `RF + LCMD` chosen per feature by OOB error |
+| **Normalisation** | Linear mixed models (`lme4` / `nlme`) removing plate/batch & unwanted covariates | QC-trained SERRF Random Forest (`normalise_SERRF()`) + run-order plots |
+| **Special features** | Matched 1:1 case-control pair exclusion (`case_control = TRUE`) | Stratified outlier removal & retention-time feature clustering |
+| **Full walkthrough** | [Pipeline vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html) | [Complete modular workflow](https://iarcbiostat.github.io/OmicsProcessing/articles/modular-workflow.html) |
 
-### Modular workflow (build your own)
+### Pipeline (`process_data()`)
 
-- Compose individual steps to suit your study design. Typical sequence:
-  - Filter by missingness with [`filter_by_missingness()`](https://iarcbiostat.github.io/OmicsProcessing/reference/filter_by_missingness.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.html))
-  - Detect outlier samples with [`remove_outliers()`](https://iarcbiostat.github.io/OmicsProcessing/reference/remove_outliers.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html))
-  - Impute with RF, LCMD, or both via [`hybrid_imputation()`](https://iarcbiostat.github.io/OmicsProcessing/reference/hybrid_imputation.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.html))
-  - Normalise with SERRF using [`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html))
-  - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.html) ([vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.html))
+An end-to-end wrapper where every step can be toggled on or off: missingness exclusions, imputation, transformation, PCA + LOF outlier exclusion, matched case-control handling, mixed-model plate/batch correction, and centring/scaling. Returns processed data, filtered metadata, exclusion IDs, and PCA/LOF diagnostic plots.
 
-## Quick start
+→ Start with the [Pipeline vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html).
+
+### Modules
+
+Compose individual functions into a tailored workflow—each step has both an end-to-end walkthrough and a dedicated reference vignette:
+
+1. [Data filtering](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.html) — [`filter_by_missingness()`](https://iarcbiostat.github.io/OmicsProcessing/reference/filter_by_missingness.html)
+2. [Outlier removal](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html) — [`remove_outliers()`](https://iarcbiostat.github.io/OmicsProcessing/reference/remove_outliers.html)
+3. [Log transformation](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.html) — `log1p()` + [`resolve_target_cols()`](https://iarcbiostat.github.io/OmicsProcessing/reference/resolve_target_cols.html)
+4. [Hybrid imputation](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.html) — [`hybrid_imputation()`](https://iarcbiostat.github.io/OmicsProcessing/reference/hybrid_imputation.html)
+5. [SERRF normalisation](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html) — [`normalise_SERRF()`](https://iarcbiostat.github.io/OmicsProcessing/reference/normalise_SERRF.html)
+6. [Normalisation plot comparison](https://iarcbiostat.github.io/OmicsProcessing/articles/plot-omics-distributions.html) — [`plot_omics_distributions()`](https://iarcbiostat.github.io/OmicsProcessing/reference/plot_omics_distributions.html)
+7. [Feature clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.html) — [`cluster_features_by_retention_time()`](https://iarcbiostat.github.io/OmicsProcessing/reference/cluster_features_by_retention_time.html)
+
+→ Start with the [Complete modular workflow](https://iarcbiostat.github.io/OmicsProcessing/articles/modular-workflow.html).
+
+## Installation
+
+Install the development version from GitHub:
 
 ```r
 # install.packages("remotes")
@@ -27,96 +45,13 @@ remotes::install_github("IARCBiostat/OmicsProcessing")
 library(OmicsProcessing)
 ```
 
-Run the semi-automated pipeline with three input tables:
+## Example datasets
 
-```r
-processed <- process_data(
-  data = data_features,
-  data_meta_features = data_meta_features,
-  data_meta_samples = data_meta_samples,
-  col_samples = "ID_sample",
-  exclusion_extreme_feature = TRUE,
-  exclusion_extreme_sample = TRUE,
-  imputation = TRUE,
-  transformation = TRUE,
-  outlier = TRUE,
-  plate_correction = TRUE
-)
-```
+The package includes two synthetic datasets generated by [`build_omics_synthetic()`](https://iarcbiostat.github.io/OmicsProcessing/reference/build_omics_synthetic.html) so you can run every vignette out of the box:
 
-Or stitch together a modular workflow:
-
-```r
-# Load data
-df <- readr::read_csv("path/to/data")
-
-# Filter by missingness
-df_filtered <- filter_by_missingness(
-  df,
-  row_thresh = 0.5,
-  col_thresh = 0.5,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df$sample_type),
-  filter_order = "iterative"
-)
-
-# Detect outlier samples (PCA + LOF)
-outliers <- remove_outliers(
-  df_filtered,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df_filtered$sample_type),
-  method = "pca-lof-overall",
-  impute_method = "half-min-value",
-  restore_missing_values = TRUE,
-  return_ggplots = FALSE
-)
-df_clean <- outliers$df_filtered
-
-# Log-transform features
-df_clean <- df_clean %>%
-  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
-
-# Impute missing values (RF + LCMD)
-df_imputed <- hybrid_imputation(
-  df_clean,
-  target_cols = "@",
-  method = "RF-LCMD",
-  oobe_threshold = 0.1
-)$hybrid_rf_lcmd
-
-# SERRF normalisation
-df_normalised <- normalise_SERRF(
-  df_imputed,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df_imputed$sample_type),
-  strata_col = "batch"
-)
-
-# Cluster features by RT using correlations
-clusters <- cluster_features_by_retention_time(
-  df = df_normalised,
-  target_cols = "@",
-  rt_height = 0.07,
-  method = "correlations",
-  cut_height = 0.26,
-  corr_thresh = 0.75
-)
-```
+- [`example_proteomics`](https://iarcbiostat.github.io/OmicsProcessing/reference/example_proteomics.html) — Olink-style case-cohort proteomics study (210 samples × 40 UniProt NPX proteins with below-LOD missingness, plate/batch shifts, and outliers).
+- [`example_metabolomics`](https://iarcbiostat.github.io/OmicsProcessing/reference/example_metabolomics.html) — Untargeted LC-MS matched case-control metabolomics study (216 samples including 36 pooled `"sQC"` rows × 30 `"mass@rt"` features with run-order drift, MAR/MNAR missingness, outliers, and RT clusters).
 
 ## Developers & Contributors
 
-We welcome contributions to **OmicsProcessing**. Our priorities are clean code and good documentation.
-
-Please follow these guidelines: [Developers & Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.html)
-
-## Resources
-
-- Data filtering vignette: [Filtering missingness](https://iarcbiostat.github.io/OmicsProcessing/articles/data-filtering.html)
-- Outlier removal vignette: [PCA + LOF outlier detection](https://iarcbiostat.github.io/OmicsProcessing/articles/outlier-removal.html)
-- Hybrid imputation vignette: [Random Forest + LCMD](https://iarcbiostat.github.io/OmicsProcessing/articles/hybrid-imputation.html)
-- Function reference index: [All functions](https://iarcbiostat.github.io/OmicsProcessing/reference/index.html)
-- Semi-automated pipeline details: [Semi-automated pipeline vignette](https://iarcbiostat.github.io/OmicsProcessing/articles/process_data.html)
-- Log-transform features: [Log transformation (log1p)](https://iarcbiostat.github.io/OmicsProcessing/articles/log-transformation.html)
-- SERRF batch correction: [Batch correction using SERRF](https://iarcbiostat.github.io/OmicsProcessing/articles/serrf-normalisation.html)
-- Feature clustering: [Retention-time clustering](https://iarcbiostat.github.io/OmicsProcessing/articles/feature-clustering.html)
-- Developers & contributors: [Developer guide](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.html)
+We welcome contributions to **OmicsProcessing**. See the [Developers & Contributors](https://iarcbiostat.github.io/OmicsProcessing/articles/developer-guidelines.html) guide for coding, documentation, and testing guidelines, or browse the [Function reference](https://iarcbiostat.github.io/OmicsProcessing/reference/index.html).

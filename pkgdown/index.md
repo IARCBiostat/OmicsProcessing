@@ -1,26 +1,43 @@
 # OmicsProcessing
 
-Pre-analysis processing for metabolomics and proteomics: missingness filtering, outlier handling, imputation, transformation, matched case-control handling, batch/plate correction, and SERRF-based normalisation across batches or strata.
+Pre-analysis processing for metabolomics and proteomics data: missingness filtering, PCA + LOF outlier detection, transformation, imputation (LOD, classical, or hybrid RF + LCMD), matched case-control handling, linear mixed-model plate/batch correction, QC-based SERRF normalisation, run-order diagnostics, and retention-time feature clustering.
 
 ## Choose your workflow
 
-### Semi-automated pipeline (`process_data()`)
+`OmicsProcessing` offers two complementary workflows depending on your assay type and how much step-by-step control you need:
 
-- End-to-end wrapper that can filter on missingness, impute, transform, remove outliers (PCA + LOF), handle matched case-control designs, correct for plate/batch effects, and centre/scale.
-- Takes three data frames (feature data, feature metadata, sample metadata) and returns processed data plus exclusion IDs and PCA/LOF plots.
-- Full walk-through: [Semi-automated pipeline](articles/process_data.html).
+| | **Pipeline (`process_data()`)** | **Modules (step-by-step)** |
+|---|---|---|
+| **Best for** | Targeted proteomics (e.g., Olink) & plate-based multi-batch studies | Untargeted LC-MS metabolomics with pooled QC samples |
+| **Input format** | Three tables: feature data, feature metadata, sample metadata | Single flat data frame (samples + `"sQC"` rows, metadata + `"mass@rt"` features) |
+| **Missingness & imputation** | Threshold exclusions; `LOD`, `1/5th`, `KNN`, `PPCA`, `mean`, `median`, `RF`, `LCMD` | QC-aware iterative filtering; hybrid `RF + LCMD` chosen per feature by OOB error |
+| **Normalisation** | Linear mixed models (`lme4` / `nlme`) removing plate/batch & unwanted covariates | QC-trained SERRF Random Forest (`normalise_SERRF()`) + run-order plots |
+| **Special features** | Matched 1:1 case-control pair exclusion (`case_control = TRUE`) | Stratified outlier removal & retention-time feature clustering |
+| **Full walkthrough** | [Pipeline vignette](articles/process_data.html) | [Complete modular workflow](articles/modular-workflow.html) |
 
-### Modular workflow (build your own)
+### Pipeline (`process_data()`)
 
-- Compose individual steps to suit your study design. Typical sequence:
-  - Filter by missingness with [`filter_by_missingness()`](reference/filter_by_missingness.html) ([vignette](articles/data-filtering.html))
-  - Detect outlier samples with [`remove_outliers()`](reference/remove_outliers.html) ([vignette](articles/outlier-removal.html))
-  - Impute with RF, LCMD, or both via [`hybrid_imputation()`](reference/hybrid_imputation.html) ([vignette](articles/hybrid-imputation.html))
-  - Normalise with SERRF using [`normalise_SERRF()`](reference/normalise_SERRF.html) ([vignette](articles/serrf-normalisation.html))
-  - Compare run-order plots before and after normalisation with `plot_omics_distributions()` ([vignette](articles/plot-omics-distributions.html))
-  - Cluster features by RT or correlations using [`cluster_features_by_retention_time()`](reference/cluster_features_by_retention_time.html) ([vignette](articles/feature-clustering.html))
+An end-to-end wrapper where every step can be toggled on or off: missingness exclusions, imputation, transformation, PCA + LOF outlier exclusion, matched case-control handling, mixed-model plate/batch correction, and centring/scaling. Returns processed data, filtered metadata, exclusion IDs, and PCA/LOF diagnostic plots.
 
-## Quick start
+→ Start with the [Pipeline vignette](articles/process_data.html).
+
+### Modules
+
+Compose individual functions into a tailored workflow—each step has both an end-to-end walkthrough and a dedicated reference vignette:
+
+1. [Data filtering](articles/data-filtering.html) — [`filter_by_missingness()`](reference/filter_by_missingness.html)
+2. [Outlier removal](articles/outlier-removal.html) — [`remove_outliers()`](reference/remove_outliers.html)
+3. [Log transformation](articles/log-transformation.html) — `log1p()` + [`resolve_target_cols()`](reference/resolve_target_cols.html)
+4. [Hybrid imputation](articles/hybrid-imputation.html) — [`hybrid_imputation()`](reference/hybrid_imputation.html)
+5. [SERRF normalisation](articles/serrf-normalisation.html) — [`normalise_SERRF()`](reference/normalise_SERRF.html)
+6. [Normalisation plot comparison](articles/plot-omics-distributions.html) — [`plot_omics_distributions()`](reference/plot_omics_distributions.html)
+7. [Feature clustering](articles/feature-clustering.html) — [`cluster_features_by_retention_time()`](reference/cluster_features_by_retention_time.html)
+
+→ Start with the [Complete modular workflow](articles/modular-workflow.html).
+
+## Installation
+
+Install the development version from GitHub:
 
 ```r
 # install.packages("remotes")
@@ -28,117 +45,13 @@ remotes::install_github("IARCBiostat/OmicsProcessing")
 library(OmicsProcessing)
 ```
 
-Run the semi-automated pipeline with three input tables:
+## Example datasets
 
-```r
-processed <- process_data(
-  data = data_features,
-  data_meta_features = data_meta_features,
-  data_meta_samples = data_meta_samples,
-  col_samples = "ID_sample",
-  exclusion_extreme_feature = TRUE,
-  exclusion_extreme_sample = TRUE,
-  imputation = TRUE,
-  transformation = TRUE,
-  outlier = TRUE,
-  plate_correction = TRUE
-)
-```
+The package includes two synthetic datasets generated by [`build_omics_synthetic()`](reference/build_omics_synthetic.html) so you can run every vignette out of the box:
 
-Or stitch together a modular workflow:
-
-```r
-# Load data
-df <- readr::read_csv("path/to/data")
-
-# Filter by missingness
-df_filtered <- filter_by_missingness(
-  df,
-  row_thresh = 0.5,
-  col_thresh = 0.5,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df$sample_type),
-  filter_order = "iterative"
-)
-
-# Detect outlier samples (PCA + LOF)
-outliers <- remove_outliers(
-  df_filtered,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df_filtered$sample_type),
-  method = "pca-lof-overall",
-  impute_method = "half-min-value",
-  restore_missing_values = TRUE,
-  return_ggplots = FALSE
-)
-df_clean <- outliers$df_filtered
-
-# Log-transform features
-df_clean <- df_clean %>%
-  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
-
-# Impute missing values (RF + LCMD)
-df_imputed <- hybrid_imputation(
-  df_clean,
-  target_cols = "@",
-  method = "RF-LCMD",
-  oobe_threshold = 0.1
-)$hybrid_rf_lcmd
-
-# SERRF normalisation
-df_normalised <- normalise_SERRF(
-  df_imputed,
-  target_cols = "@",
-  is_qc = grepl("^sQC", df_imputed$sample_type),
-  strata_col = "batch"
-)
-
-# Cluster features by RT using correlations
-clusters <- cluster_features_by_retention_time(
-  df = df_normalised,
-  target_cols = "@",
-  rt_height = 0.07,
-  method = "correlations",
-  cut_height = 0.26,
-  corr_thresh = 0.75
-)
-```
-### Quick visual check after normalisation
-
-Before moving on to downstream analyses, it is often useful to inspect a few features manually. A simple strategy is to choose 3 features at random and compare their run-order profiles before and after normalisation with [`plot_omics_distributions()`](articles/plot-omics-distributions.html).
-
-```r
-set.seed(1)
-sample_features <- sample(target_cols, 3)
-
-plot_omics_distributions(
-  df = df_imputed,
-  df_comp = df_normalised,
-  target_cols = sample_features,
-  run_order = "run_ord",
-  is_qc = "is_qc",
-  batch = "batch_id",
-  plate = "plate_id",
-  title = "Before normalisation",
-  title_comp = "After normalisation"
-)
-```
+- [`example_proteomics`](reference/example_proteomics.html) — Olink-style case-cohort proteomics study (210 samples × 40 UniProt NPX proteins with below-LOD missingness, plate/batch shifts, and outliers).
+- [`example_metabolomics`](reference/example_metabolomics.html) — Untargeted LC-MS matched case-control metabolomics study (216 samples including 36 pooled `"sQC"` rows × 30 `"mass@rt"` features with run-order drift, MAR/MNAR missingness, outliers, and RT clusters).
 
 ## Developers & Contributors
 
-We welcome contributions to **OmicsProcessing**. Our priorities are clean code and good documentation.
-
-Please follow these guidelines: [Developers & Contributors](articles/developer-guidelines.html)
-
-## Resources
-
-- Data filtering vignette: [Filtering missingness](articles/data-filtering.html)
-- Outlier removal vignette: [PCA + LOF outlier detection](articles/outlier-removal.html)
-- Hybrid imputation vignette: [Random Forest + LCMD](articles/hybrid-imputation.html)
-- Function reference index: [All functions](reference/index.html)
-- Semi-automated pipeline details: [Semi-automated pipeline vignette](articles/process_data.html)
-- Log-transform features: [Log transformation (log1p)](articles/log-transformation.html)
-- SERRF batch correction: [Batch correction using SERRF](articles/serrf-normalisation.html)
-- Normalisation plot comparison: [Compare run-order plots before and after normalisation](articles/plot-omics-distributions.html)
-- Feature clustering: [Retention-time clustering](articles/feature-clustering.html)
-- Developers & contributors: [Developer guide](articles/developer-guidelines.html)
+We welcome contributions to **OmicsProcessing**. See the [Developers & Contributors](articles/developer-guidelines.html) guide for coding, documentation, and testing guidelines, or browse the [Function reference](reference/index.html).

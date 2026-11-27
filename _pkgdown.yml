@@ -6,4 +6,56 @@ destination: docs
 
 home:
   title: "OmicsProcessing"
-  description: "Pre-analysis processing workflows for omics data: filtering, QC, and SERRF-based normalization with batch/strata support."
+  description: "Pre-analysis processing workflows for omics data: semi-automated pipeline and modular workflow for metabolomics and proteomics."
+
+navbar:
+  structure:
+    left: [pipeline, modules, reference, contributing]
+  components:
+    pipeline:
+      text: Pipeline
+      href: articles/process_data.html
+    modules:
+      text: Modules
+      menu:
+      - text: Complete modular workflow
+        href: articles/modular-workflow.html
+      - text: "-------"
+      - text: "1. Data filtering"
+        href: articles/data-filtering.html
+      - text: "2. Outlier removal"
+        href: articles/outlier-removal.html
+      - text: "3. Log transformation"
+        href: articles/log-transformation.html
+      - text: "4. Hybrid imputation"
+        href: articles/hybrid-imputation.html
+      - text: "5. SERRF normalisation"
+        href: articles/serrf-normalisation.html
+      - text: "6. Normalisation plot comparison"
+        href: articles/plot-omics-distributions.html
+      - text: "7. Feature clustering"
+        href: articles/feature-clustering.html
+    contributing:
+      text: Contributing
+      href: articles/developer-guidelines.html
+
+articles:
+- title: Pipeline
+  desc: End-to-end semi-automated processing with `process_data()`.
+  contents:
+  - process_data
+- title: Modules
+  desc: Step-by-step modular workflow for untargeted LC-MS metabolomics and custom designs.
+  contents:
+  - modular-workflow
+  - data-filtering
+  - outlier-removal
+  - log-transformation
+  - hybrid-imputation
+  - serrf-normalisation
+  - plot-omics-distributions
+  - feature-clustering
+- title: Developers & Contributors
+  desc: Guidelines for contributing code, documentation, and unit tests.
+  contents:
+  - developer-guidelines

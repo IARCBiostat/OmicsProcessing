@@ -14,16 +14,65 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Step 4: Hybrid Imputation (Random Forest + LCMD)
+## Preparing the example data
 
-```{r eval=FALSE}
-imputed_results <- OmicsProcessing::hybrid_imputation(
+Hybrid imputation runs on log-transformed data after missingness
+filtering, outlier removal, and `log1p()`
+transformation. Here we prepare `log_transformed_df` from
+`example_metabolomics`:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+filtered_df <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+clean_df <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
+)$df_filtered
+
+log_transformed_df <- clean_df %>%
+  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
+
+target_cols <- resolve_target_cols(log_transformed_df, "@")
+sum(is.na(log_transformed_df[, target_cols]))
+```
+
+## Hybrid Imputation (Random Forest + LCMD)
+
+```{r hybrid-imputation}
+set.seed(42)
+
+imputed_results <- hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
-  method = c("RF-LCMD"),
-  oobe_threshold = 0.1
+  is_qc = grepl("^sQC", log_transformed_df$sample_type),
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  control_RF = list(verbose = FALSE)
 )
+
 imputed_df <- imputed_results$hybrid_rf_lcmd
+
+# Inspect feature-level OOB errors and RF vs LCMD split
+round(imputed_results$oob, 3)
+table(method_used = ifelse(imputed_results$oob < 0.1, "RF", "LCMD"))
+sum(is.na(imputed_df[, target_cols]))
 ```
 
 `hybrid_imputation()` combines two complementary strategies:
@@ -58,64 +107,66 @@ are two main options.
 #### A. Impute QC samples together with the rest of the data
 
 To include all rows in the hybrid imputation process, leave `is_qc` as
-`NULL`, or provide a logical vector of the same length as the number of
-rows in the data, with all values set to `FALSE`.
+`NULL` (or pass `rep(FALSE, nrow(log_transformed_df))`):
 
-```{r eval=FALSE}
-imputed_results <- OmicsProcessing::hybrid_imputation(
+```{r qc-all-together}
+imputed_all <- hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
   method = "RF-LCMD",
   oobe_threshold = 0.1,
-  is_qc = NULL
+  is_qc = NULL,
+  control_RF = list(verbose = FALSE)
 )
 
-is_qc_all_false <- rep(FALSE, nrow(log_transformed_df))
-
-imputed_results <- OmicsProcessing::hybrid_imputation(
-  log_transformed_df,
-  target_cols = "@",
-  method = "RF-LCMD",
-  oobe_threshold = 0.1,
-  is_qc = is_qc_all_false
-)
+sum(is.na(imputed_all$hybrid_rf_lcmd[, target_cols]))
 ```
 
 #### B. Impute QC samples using only QC sample values
 
-If you want to impute QC samples separately, using only information from
-other QC samples, you can invert the `is_qc` vector. This excludes all
-non-QC rows from the imputation calculations and applies the pipeline only
-to the QC samples.
+If you want to impute missing values in QC samples separately, using only
+information from other QC samples, you can invert the `is_qc` vector.
+This excludes all non-QC rows from the imputation calculations and
+applies the pipeline only to the QC samples.
 
-```{r eval=FALSE}
-is_qc <- sample_metadata$is_qc
+Since QC rows in `example_metabolomics` are complete, we introduce a few
+missing values into QC rows below to demonstrate QC-only imputation:
 
-imputed_qc_results <- OmicsProcessing::hybrid_imputation(
-  log_transformed_df,
+```{r qc-only-imputation}
+set.seed(1)
+df_qc_missing <- log_transformed_df
+qc_idx <- which(df_qc_missing$is_qc)
+for (col in target_cols[1:5]) {
+  df_qc_missing[sample(qc_idx, 3), col] <- NA_real_
+}
+
+sum(is.na(df_qc_missing[qc_idx, target_cols]))
+
+imputed_qc_results <- hybrid_imputation(
+  df_qc_missing,
   target_cols = "@",
   method = "RF-LCMD",
   oobe_threshold = 0.1,
-  is_qc = !is_qc
+  is_qc = !df_qc_missing$is_qc,
+  control_RF = list(verbose = FALSE)
 )
 
 imputed_qc_df <- imputed_qc_results$hybrid_rf_lcmd
+sum(is.na(imputed_qc_df[qc_idx, target_cols]))
 ```
-
 
 ### Customising the RF and LCMD controls
 
-You can tweak both engines via control lists:
+You can tweak both engines via `control_RF` and `control_LCMD`:
 
-```{r eval=FALSE}
+```{r custom-controls}
 my_control_RF <- list(
   parallelize = "no",
   mtry = floor(sqrt(length(target_cols))),
   ntree = 100,
   maxiter = 10,
   variablewise = TRUE,
-  verbose = TRUE,
-  n_cores = parallel::detectCores()
+  verbose = FALSE
 )
 
 my_control_LCMD <- list(
@@ -123,30 +174,29 @@ my_control_LCMD <- list(
   method.MNAR = "QRILC"
 )
 
-df_rf_lcmd_hybrid <- OmicsProcessing::hybrid_imputation(
+df_rf_lcmd_hybrid <- hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
-  method = c("RF-LCMD"),
+  is_qc = grepl("^sQC", log_transformed_df$sample_type),
+  method = "RF-LCMD",
   oobe_threshold = 0.1,
   control_LCMD = my_control_LCMD,
   control_RF = my_control_RF
 )
+
+sum(is.na(df_rf_lcmd_hybrid$hybrid_rf_lcmd[, target_cols]))
 ```
 
 ### Parallelising the RF step (`missForest`)
 
-`missForest` can run in parallel when you register a **foreach**
-backend and set `parallelize`:
+`run_rf_imputation()` manages cluster registration automatically when you
+set `parallelize = "variables"` (or `"forests"`) and `n_cores` inside
+`control_RF`:
 
-```{r eval=FALSE}
-library(doParallel)
-
-n_cores <- parallel::detectCores(logical = FALSE)
-cl <- parallel::makeCluster(n_cores)
-doParallel::registerDoParallel(cl)
-
+```{r parallel-rf, eval = FALSE}
 ctrl_parallel_RF <- list(
   parallelize = "variables", # or "forests"
+  n_cores = 2,
   mtry = floor(sqrt(length(target_cols))),
   ntree = 200,
   maxiter = 10,
@@ -154,16 +204,14 @@ ctrl_parallel_RF <- list(
   verbose = TRUE
 )
 
-imputed_parallel <- OmicsProcessing::hybrid_imputation(
+imputed_parallel <- hybrid_imputation(
   log_transformed_df,
   target_cols = "@",
+  is_qc = grepl("^sQC", log_transformed_df$sample_type),
   method = "RF-LCMD",
   oobe_threshold = 0.1,
   control_RF = ctrl_parallel_RF
 )
-
-parallel::stopCluster(cl)
-doParallel::registerDoSEQ()
 ```
 
 Guidance:
@@ -172,12 +220,11 @@ Guidance:
   trees instead.
 * Keep `ntree` reasonable when parallelising to avoid memory pressure.
 
-
 Tips:
 
-* Keep `target_cols` explicit when possible for clarity; `"@"` will use
-  all feature columns resolved via `resolve_target_cols()`.
+* Keep `target_cols` explicit when possible for clarity; `"@"` matches
+  all `"mass@rt"` feature columns via `resolve_target_cols()`.
 * Inspect `imputed_results$oob` to confirm the RF ↔ LCMD split aligns
   with your expectations.
-* For very wide matrices, tune `ntree`, `mtry`, or the number of worker
-  cores to balance runtime and stability.
+* For very wide matrices, tune `ntree`, `mtry`, or `n_cores` to balance
+  runtime and stability.

@@ -14,43 +14,109 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Preparing the example data
+
+SERRF normalisation requires complete (imputed), numeric feature data
+with interspersed QC samples. Here we prepare `imputed_df` from
+`example_metabolomics` by applying `filter_by_missingness()`,
+`remove_outliers()`, `log1p()`, and `hybrid_imputation()`:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+filtered_df <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+clean_df <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
+)$df_filtered
+
+log_df <- clean_df %>%
+  dplyr::mutate(dplyr::across(tidyselect::contains("@"), log1p))
+
+imputed_df <- hybrid_imputation(
+  log_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", log_df$sample_type),
+  method = "RF-LCMD",
+  oobe_threshold = 0.1,
+  control_RF = list(verbose = FALSE)
+)$hybrid_rf_lcmd
+```
+
 ## Batch correction using Systematical Error Removal using Random Forest (SERRF)
 
-```{r eval=FALSE}
-out_serrf <- OmicsProcessing::normalise_SERRF(
+```{r serrf}
+out_serrf <- normalise_SERRF(
   imputed_df,
   target_cols = "@",
   is_qc = grepl("^sQC", imputed_df$sample_type),
-  strata_col = "batch"  # omit to treat all samples as one strata
+  strata_col = "batch"  # omit to treat all samples as one stratum
 )
 ```
 
+We can verify the reduction in technical variability by comparing the
+standard deviation across pooled QC samples before and after SERRF
+normalisation:
+
+```{r serrf-check}
+feature_cols <- resolve_target_cols(out_serrf, "@")
+qc_rows <- grepl("^sQC", out_serrf$sample_type)
+
+qc_sd_before <- apply(imputed_df[qc_rows, feature_cols], 2, sd)
+qc_sd_after <- apply(out_serrf[qc_rows, feature_cols], 2, sd)
+
+summary_df <- data.frame(
+  median_qc_sd_before = round(median(qc_sd_before), 4),
+  median_qc_sd_after = round(median(qc_sd_after), 4),
+  pct_reduction = round(100 * (1 - median(qc_sd_after) / median(qc_sd_before)), 1)
+)
+summary_df
+```
+
 `normalise_SERRF()` models unwanted technical variation using
-QC samples within each batch/stratum and applies SERRF normalization to
+QC samples within each batch/stratum and applies SERRF normalisation to
 the specified feature columns. Use `target_cols` to select features by
-name, tidyselect helper, or regex (resolved via
-`resolve_target_cols()`), and supply a logical `is_qc` flag for each
-row. See the reference:
+name or regular expression (resolved via `resolve_target_cols()`), and
+supply a logical `is_qc` flag for each row. See the reference:
 [`normalise_SERRF()`](../reference/normalise_SERRF.html).
 
 ### Input requirements
 
 - `strata_col`: provide the batch/strata column when it exists; if you
-  omit it, a dummy single-level strata is created so all samples are
+  omit it, a dummy single-level stratum is created so all samples are
   treated as one batch. If supplied, it is coerced to a factor (no NAs).
 - `is_qc` is a logical vector the same length as `nrow(df)`; ensure
   every batch has enough QC samples for the SERRF model.
 - All `target_cols` must be numeric and **contain no NA values** (impute
   beforehand).
-- At least three target features are required (SERRF needs predictors to
-  model each feature).
+- Ensure the number of target features exceeds `num_screen_SERRF`
+  (default `10`), or lower `num_screen_SERRF` accordingly when testing on
+  a small feature subset.
 
 ### Tuning and tips
 
-- `num_screen_SERRF` (default 10) controls how many correlated features
+- `num_screen_SERRF` (default `10`) controls how many correlated features
   are screened per target; increase cautiously if you have many features
   and stable QC coverage.
-- Inspect before/after QC CVs or PCA to verify batch drift is reduced.
+- Inspect before/after QC variability or run-order plots with
+  [`plot_omics_distributions()`](plot-omics-distributions.html) to verify
+  that batch drift is reduced.
 - Keep batches balanced: very small batches or few QC points can lead to
   unstable fits; consider merging sparse strata or adding QC if
   possible.

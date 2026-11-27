@@ -11,10 +11,11 @@ Authors@R: c(
 Maintainer: Matthew Lee <matthewlee821@gmail.com>
 Description: A package for the pre-analysis processing of omics data.
 License: GPL (>= 3)
+URL: https://iarcbiostat.github.io/OmicsProcessing, https://github.com/IARCBiostat/OmicsProcessing
+BugReports: https://github.com/IARCBiostat/OmicsProcessing/issues
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Imports:
   nlme,
   lme4,
@@ -55,3 +56,4 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.1

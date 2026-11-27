@@ -14,10 +14,35 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Preparing the example data
+
+The modular workflow operates directly on the flat untargeted LC-MS
+metabolomics dataset (`example_metabolomics`). Before detecting sample
+outliers, we first run `filter_by_missingness()` to remove features
+and non-QC samples with >50% missingness:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+filtered_df <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+dim(filtered_df)
+```
+
 ## Outlier removal using PCA + LOF
 
-```{r eval=FALSE}
-outlier_results <- OmicsProcessing::remove_outliers(
+```{r outlier-overall}
+outlier_results <- remove_outliers(
   filtered_df,
   target_cols = "@",
   is_qc = grepl("^sQC", filtered_df$sample_type),
@@ -26,22 +51,32 @@ outlier_results <- OmicsProcessing::remove_outliers(
   restore_missing_values = TRUE,
   return_ggplots = TRUE
 )
+
 clean_df <- outlier_results$df_filtered
+outlier_results$excluded_ids
+dim(clean_df)
 ```
 
 This function detects and removes outliers from the dataset using a PCA +
 Local Outlier Factor (LOF) workflow. Outliers are identified only among
 non-QC samples. Missing values can be imputed temporarily for detection,
-and original `NA`s can be restored afterward. If `return_ggplots =
-TRUE`, PCA plots are returned (see notes below). See
+and original `NA`s can be restored afterward. When `return_ggplots =
+TRUE`, `outlier_results$plot_samples_outlier` contains a named list of
+PCA pair plots (with entry `".all"` when no stratification is used). See
 [`remove_outliers()`](../reference/remove_outliers.html).
+
+```{r outlier-overall-plot, fig.width = 9, fig.height = 8, message = FALSE, warning = FALSE}
+outlier_results$plot_samples_outlier[[".all"]]
+```
 
 ### Optional: stratified outlier detection (`strata`)
 
 By default, **no stratification** is used (all non-QC samples are
-assessed together). You can optionally provide a **stratification
-variable** so that outlier detection runs **independently within each
-stratum**, and results are then merged:
+assessed together). When strong batch shifts are present before
+normalisation, running detection globally can mask within-batch
+outliers. You can optionally provide a **stratification variable** so
+that outlier detection runs **independently within each stratum**, and
+results are then merged:
 
 * Supply `strata` as either:
 
@@ -58,37 +93,54 @@ stratum**, and results are then merged:
 * The function returns the union of outlier sample IDs across strata and
   removes only those from the non-QC portion before recombining with QC
   rows.
-* When `return_ggplots = TRUE`, you’ll get a **named list of per-stratum
-  plots** in `outlier_results$plot_samples_outlier`.
+* When `return_ggplots = TRUE`, you receive a **named list of per-stratum
+  plots** in `plot_samples_outlier`.
 
-**Examples**
+#### 1. Stratify by a column (`batch`)
 
-```{r eval=FALSE}
-## 1) No stratification (default)
-res <- OmicsProcessing::remove_outliers(
-  df, 
-  target_cols = c("f1","f2","f3"),
-  is_qc = df$sample_type == "sQC"
-)
+Notice how stratifying by `"batch"` also detects the Batch 3 outlier
+(row `177`) that was masked by batch offsets in the unstratified run:
 
-## 2) Stratify by a column (e.g., batch)
-res_batch <- OmicsProcessing::remove_outliers(
-  df, 
-  target_cols = c("f1","f2","f3"),
-  is_qc = df$sample_type == "sQC",
+```{r outlier-batch}
+res_batch <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
   strata = "batch",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
   return_ggplots = TRUE
 )
 
-## 3) Stratify by an external vector
-grp <- ifelse(df$center %in% c("C1","C2"), "C12", "C3")
-res_grp <- OmicsProcessing::remove_outliers(
-  df, 
-  target_cols = tidyselect::starts_with("feat_"),
-  is_qc = df$sample_type == "sQC",
+res_batch$excluded_ids
+names(res_batch$plot_samples_outlier)
+```
+
+```{r outlier-batch-plot, fig.width = 9, fig.height = 8, message = FALSE, warning = FALSE}
+res_batch$plot_samples_outlier[["Batch1"]]
+```
+
+#### 2. Stratify by an external vector
+
+You can also pass any external grouping vector of length `nrow(df)`.
+Note that `target_cols` accepts `NULL`, a character vector of column
+names, or a single regular expression string (resolved via
+`resolve_target_cols()`):
+
+```{r outlier-external}
+grp <- ifelse(filtered_df$center %in% c("C1", "C2"), "C12", "C3")
+
+res_grp <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
   strata = grp,
-  restore_missing_values = TRUE
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
 )
+
+res_grp$excluded_ids
 ```
 
 ### Implementation notes & requirements
@@ -100,14 +152,11 @@ res_grp <- OmicsProcessing::remove_outliers(
 Practical constraints:
 
 * You must have **enough non-QC samples per stratum** for PCA and LOF to
-  be meaningful. Very small strata (e.g., < ~8–10 samples) may yield
-  unstable or invalid LOF results.
+  be meaningful. `bigutilsr::LOF()` uses neighbour sizes up to `K = 30`
+  by default, so ensure **`n_samples_stratum > 30`** for stable results.
 * Features in `target_cols` should be **numeric**, with **no infinite
   values**; missing values are handled by the optional imputation step
   but **constant/zero-variance features** can break PCA.
-* LOF requires a number of neighbors (`K`); if a stratum has too few
-  samples relative to `K`, `LOF()` may error or degenerate. As a rule of
-  thumb, ensure **`n_samples_stratum >> K`**.
 * Very high **p/n ratios** (many more features than samples) can make PCA
   and LOF unstable. Consider filtering features before running this
   step.

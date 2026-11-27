@@ -2,46 +2,48 @@
 % Please edit documentation in R/build_omics_synthetic.R
 \name{build_omics_synthetic}
 \alias{build_omics_synthetic}
-\title{Build synthetic omics data for plotting and normalisation examples}
+\title{Build synthetic omics datasets for workflow examples and vignettes}
 \usage{
-build_omics_synthetic(
-  seed = 1,
-  n = 2000,
-  n_batch = 2,
-  n_plate_per_batch = 2,
-  n_features = 10,
-  qc_frac = 0.05
-)
+build_omics_synthetic(type = c("metabolomics", "proteomics"), seed = 42)
 }
 \arguments{
-\item{seed}{Integer random seed.}
+\item{type}{Character string specifying which synthetic dataset to generate:
+\itemize{
+\item \code{"metabolomics"} (default): Untargeted LC-MS metabolomics matched
+case-control dataset (216 rows: 36 pooled \code{"sQC"} samples and 180 study
+samples in 90 matched pairs across 3 batches and 6 plates; 30 raw
+positive-intensity \code{"mass@rt"} features with run-order drift, batch/plate
+shifts, MAR/MNAR missingness, 3 non-QC sample outliers, and co-eluting RT
+clusters).
+\item \code{"proteomics"}: Olink-style targeted proteomics case-cohort dataset (210
+study samples across 3 batches and 6 plates, comprising a 140-sample
+subcohort plus 70 additional incident cases; 40 UniProt protein features
+on positive NPX scale with below-LOD missingness, plate/batch shifts,
+biological covariate effects, and 3 sample outliers).
+}}
 
-\item{n}{Number of rows (samples).}
-
-\item{n_batch}{Number of batches.}
-
-\item{n_plate_per_batch}{Number of plates per batch.}
-
-\item{n_features}{Number of feature columns to generate.}
-
-\item{qc_frac}{Fraction of rows labelled as QC.}
+\item{seed}{Integer random seed (default \code{42}).}
 }
 \value{
-A list with three elements:
-\describe{
-\item{omics_synthetic}{A synthetic omics data frame.}
-\item{jump_info}{A data frame describing the simulated step changes per feature.}
-\item{parameters}{A list of generation parameters and sampled values.}
-}
+A \code{data.frame} with default (\code{NULL}) row names containing sample
+metadata followed by numeric feature columns.
 }
 \description{
-Create a synthetic omics data set with feature intensities, run-order
-drift, batch structure, plate structure, and QC sample labels. This is the
-generator used for the packaged \code{omics_synthetic} example data.
+Creates synthetic datasets for either untargeted LC-MS metabolomics (matched
+case-control study) or Olink-style targeted proteomics (case-cohort study) to
+demonstrate both the modular workflow and the semi-automated \code{\link[=process_data]{process_data()}}
+pipeline in \pkg{OmicsProcessing}. This is the generator used in
+\code{data-raw/example_data.R} to build \link{example_metabolomics} and
+\link{example_proteomics}.
 }
 \examples{
-generated <- build_omics_synthetic(seed = 1)
-str(generated$omics_synthetic)
-head(generated$jump_info)
+metab <- build_omics_synthetic("metabolomics", seed = 42)
+dim(metab)
 
+prot <- build_omics_synthetic("proteomics", seed = 42)
+dim(prot)
+
+}
+\seealso{
+\link{example_metabolomics}, \link{example_proteomics}
 }
