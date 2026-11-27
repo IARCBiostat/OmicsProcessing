@@ -43,7 +43,7 @@ encoding plate membership. If provided, points are coloured by plate. If
 Default is \code{NULL}.}
 
 \item{title}{Optional title for the reference plot. If \code{df_comp} is not
-\code{NULL} and \code{title_ref} is \code{NULL}, the default title is \code{"Reference"}.
+\code{NULL} and \code{title} is \code{NULL}, the default title is \code{"Reference"}.
 Default is \code{NULL}.}
 
 \item{df_comp}{Optional data frame containing comparison data, for example

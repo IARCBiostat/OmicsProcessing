@@ -41,7 +41,11 @@ Imports:
   dplyr,
   magrittr,
   grDevices,
-  stats
+  grid,
+  parallel,
+  patchwork,
+  stats,
+  utils
 Remotes:
   bioc::impute,
   bioc::pcaMethods,
