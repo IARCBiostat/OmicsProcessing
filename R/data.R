@@ -1,59 +1,59 @@
-#' Simulated Dataframe 1
+#' Synthetic untargeted LC-MS metabolomics dataset (matched case-control)
 #'
-#' A simulated dataframe with 100 rows and 101 columns. Col1 is an ID column.
-#' The remaining columns are features with randomly assigned values. Once values
-#' were assigned, feature missingness was introduced (5 percent) randomly for feature_2-feature_92.
-#' feature_93-feature_100 contains missing at 10, 20, 30, 40, 50, 60, 70, 80, and 90 perceent, respectively.
-#' Sample missingness was then intriduced for ID_90-ID_100 at 10, 20, 30, 40, 50, 60, 70, 80, 90, and 100 perceent, respectively.
-#' Missing values for ID_1 were then replaced with the mean of the feature to give ID_1 no missingness
+#' A synthetic untargeted LC-MS metabolomics dataset structured as a 1:1 matched
+#' case-control study with interspersed pooled QC samples. It is designed to
+#' demonstrate the modular processing workflow (missingness filtering, PCA + LOF
+#' outlier removal, `log1p()` transformation, hybrid RF + LCMD imputation, SERRF
+#' normalisation, run-order distribution plotting, and retention-time feature
+#' clustering) as well as matched case-control handling in [process_data()].
 #'
-#' @format A data frame with 100 rows and 101 variables:
-#' @usage data(data_features)
-"data_features"
-
-#' Simulated Dataframe 2
+#' Reproducible generation code is implemented in [build_omics_synthetic()] and
+#' invoked in `data-raw/example_data.R`.
 #'
-#' A dataframe summarizing missing values and minimum values from df1.
-#'
-#' @format A data frame with 100 rows and 3 variables:
+#' @format A data frame with 216 rows and 41 variables:
 #' \describe{
-#'   \item{ID_feature}{Feature names from data}
-#'   \item{missing_pct}{percentage of missing values for each feature}
-#'   \item{LOD}{limit of detection is the minimum feature value / 2}
-#' }
-#' @usage data(data_meta_features)
-"data_meta_features"
-
-#' Simulated Dataframe 3
-#'
-#' A dataframe with ID, batch, sex, and age information.
-#'
-#' @format A data frame with 100 rows and 4 variables:
-#' \describe{
-#'   \item{ID_sample}{ID from ID_sample column in data}
-#'   \item{batch}{randomly assigned levels (N = 10)}
-#'   \item{sex}{randomly assigned 1 or 2}
-#'   \item{age}{mean 55; SD 10}
-#' }
-#' @usage data(data_meta_samples)
-"data_meta_samples"
-
-#' Synthetic omics dataset for plotting and normalisation examples
-#'
-#' A synthetic omics dataset with run order, batch, plate, QC flags, and ten
-#' feature columns. It is intended for examples and vignettes demonstrating
-#' plotting and normalisation workflows. Reproducible data-generation code is
-#' available in `data-raw/omics_synthetic.R` in the source repository and in
-#' the installed package via `system.file("scripts", "omics_synthetic.R",
-#' package = "OmicsProcessing")`.
-#'
-#' @format A data frame with 2000 rows and 14 variables:
-#' \describe{
-#'   \item{plate_id}{Plate identifier with 4 levels.}
-#'   \item{F1-F10}{Numeric feature intensity columns.}
-#'   \item{run_ord}{Integer run order.}
-#'   \item{batch_id}{Batch identifier.}
+#'   \item{sample_id}{Character sample identifier (`"sQC_01"`--`"sQC_36"` for QC samples, `"Sample_001"`--`"Sample_180"` for study samples).}
+#'   \item{sample_type}{Character sample type (`"sQC"` for pooled QC samples, `"Sample"` for study samples).}
 #'   \item{is_qc}{Logical indicator for QC samples.}
+#'   \item{batch}{Factor with 3 levels (`"Batch1"`--`"Batch3"`).}
+#'   \item{plate}{Factor with 6 levels (`"Plate1"`--`"Plate6"`, two plates per batch).}
+#'   \item{run_order}{Integer acquisition/injection order (`1` to `216`).}
+#'   \item{case_status}{Integer case indicator (`1` = case, `0` = control) for study samples; `NA` for QC samples.}
+#'   \item{case_control_match}{Character matched pair identifier (`"Pair_01"`--`"Pair_90"`, one case and one control per pair) for study samples; `NA` for QC samples.}
+#'   \item{center}{Factor study centre (`"C1"`--`"C3"`) for study samples; `NA` for QC samples.}
+#'   \item{sex}{Factor (`"F"`, `"M"`) for study samples; `NA` for QC samples.}
+#'   \item{age}{Numeric age in years for study samples; `NA` for QC samples.}
+#'   \item{mass@rt columns}{30 numeric raw-intensity feature columns named in `"mass@rt"` format, including high-missingness features (>55% NA), moderate MAR/MNAR missingness, run-order drift, batch/plate shifts, and co-eluting RT clusters.}
 #' }
-#' @usage data(omics_synthetic)
-"omics_synthetic"
+#' @seealso [build_omics_synthetic()], [example_proteomics]
+#' @usage data(example_metabolomics)
+"example_metabolomics"
+
+#' Synthetic Olink-style proteomics dataset (case-cohort)
+#'
+#' A synthetic targeted proteomics dataset modelled on an Olink case-cohort
+#' study (random subcohort plus additional incident cases). It is designed to
+#' demonstrate the semi-automated [process_data()] pipeline, including feature
+#' and sample missingness filtering, limit-of-detection (LOD) imputation,
+#' rank-based inverse normal transformation, PCA + LOF outlier exclusion, and
+#' linear mixed-model plate/batch correction without matched case-control pair
+#' dropping.
+#'
+#' Reproducible generation code is implemented in [build_omics_synthetic()] and
+#' invoked in `data-raw/example_data.R`.
+#'
+#' @format A data frame with 210 rows and 48 variables:
+#' \describe{
+#'   \item{sample_id}{Character sample identifier (`"PROT_001"`--`"PROT_210"`).}
+#'   \item{subcohort}{Logical indicator for membership in the random subcohort (`140` `TRUE`, `70` `FALSE`).}
+#'   \item{case_status}{Integer incident case indicator (`90` cases total: `20` inside the subcohort and `70` outside; `120` non-cases).}
+#'   \item{batch}{Factor with 3 levels (`"Batch1"`--`"Batch3"`).}
+#'   \item{plate}{Factor with 6 levels (`"Plate1"`--`"Plate6"`, two plates per batch).}
+#'   \item{center}{Factor study centre (`"C1"`--`"C3"`).}
+#'   \item{sex}{Factor (`"F"`, `"M"`).}
+#'   \item{age}{Numeric age in years.}
+#'   \item{UniProt columns}{40 numeric Olink NPX-scale protein columns named by UniProt accession (e.g., `P01375`, `P05231`), including high-missingness proteins (>55% NA), left-censored below-LOD missingness, plate/batch shifts, and 3 injected sample outliers.}
+#' }
+#' @seealso [build_omics_synthetic()], [example_metabolomics]
+#' @usage data(example_proteomics)
+"example_proteomics"

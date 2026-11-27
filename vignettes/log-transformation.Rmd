@@ -14,39 +14,78 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Step 3: Log transformation
+## Preparing the example data
 
-```{r eval=FALSE}
-feature_cols <- OmicsProcessing::resolve_target_cols(clean_df, "@")
+Raw untargeted LC-MS peak intensities are positive and typically strongly
+right-skewed, so a log transformation is applied after missingness
+filtering and outlier removal before imputation and
+normalisation. Here we prepare `clean_df` from `example_metabolomics`:
+
+```{r setup}
+library(OmicsProcessing)
+
+data("example_metabolomics")
+df <- example_metabolomics
+
+filtered_df <- filter_by_missingness(
+  df,
+  row_thresh = 0.5,
+  col_thresh = 0.5,
+  target_cols = "@",
+  is_qc = grepl("^sQC", df$sample_type),
+  filter_order = "iterative"
+)
+
+clean_df <- remove_outliers(
+  filtered_df,
+  target_cols = "@",
+  is_qc = grepl("^sQC", filtered_df$sample_type),
+  method = "pca-lof-overall",
+  impute_method = "half-min-value",
+  restore_missing_values = TRUE,
+  return_ggplots = FALSE
+)$df_filtered
+```
+
+## Log transformation
+
+```{r log-transform}
+feature_cols <- resolve_target_cols(clean_df, "@")
+
 log_transformed_df <- clean_df %>%
   dplyr::mutate(dplyr::across(
     .cols = tidyselect::all_of(feature_cols),
     .fns = ~ log1p(.x),
     .names = "{.col}"
   ))
+
+# Compare intensity ranges before and after log1p() for the first 3 features
+summary(clean_df[, feature_cols[1:3]])
+summary(log_transformed_df[, feature_cols[1:3]])
 ```
 
-Apply a natural log transform with a +1 offset across all feature
-columns. `resolve_target_cols()` lets you declare the feature set via
-names, tidyselect helpers, or regex (e.g., `"^met_"`, `"feature[0-9]+"`,
-or `"@"` to use all feature columns). The resulting log1p scaling often
-reduces skewness, stabilizes variance, and moderates the influence of
-extreme values without discarding zeros.
+Apply a natural log transform with a `+ 1` offset across all feature
+columns. `resolve_target_cols()` resolves feature columns from explicit
+names or a regular expression (for example, `"^met_"`, `"feature[0-9]+"`,
+or `"@"` to match all `"mass@rt"` feature columns). The resulting `log1p`
+scaling reduces skewness, stabilises variance, and moderates the
+influence of extreme values without discarding zeros.
 
 ### Why use `log1p`?
 
 - Handles zeros gracefully (no need to add a pseudo-count manually).
 - Produces smoother distributions that are friendlier for downstream
-  modeling and distance-based methods.
-- Keeps column naming intact via `.names = "{.col}"`, so you can swap
-  the transformed data back into your pipeline without additional
+  modelling and distance-based methods.
+- Keeps column naming intact via `.names = "{.col}"`, so you can pass
+  the transformed data directly into subsequent pipeline steps without
   renaming.
 
 ### Tips for choosing feature columns
 
-- Prefer explicit targets for clarity: e.g.,
-  `resolve_target_cols(clean_df, c("met_a", "met_b"))`.
-- Regex or tidyselect helpers are useful for wide matrices:
-  `resolve_target_cols(clean_df, tidyselect::starts_with("met_"))`.
-- Ensure feature columns are numeric; convert factors/characters before
-  transformation to avoid unintended `NA`s.
+- Prefer explicit targets when working with a known subset:
+  `resolve_target_cols(clean_df, c("145.061@1.20", "146.064@1.22"))`.
+- Use a regular expression for wide matrices:
+  `resolve_target_cols(clean_df, "@")` or
+  `resolve_target_cols(clean_df, "^145|203")`.
+- Ensure feature columns are numeric and non-negative before applying
+  `log1p()` to avoid unintended `NaN`s.
