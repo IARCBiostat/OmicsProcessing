@@ -186,8 +186,42 @@ multiplying all feature values for ID_10 by 1.5:
 
 ### Plate correction
 
-You can perform plate correction by providing sample and feature
-meta-data files.
+Plate and batch correction removes unwanted technical variation while
+preserving biological signal using per-feature linear mixed models via
+`normalization_residualMixedModels()` (Viallon et al., 2021).
+
+**What the model does:** For each feature $Y$, the function fits
+
+$$Y \sim \text{fixed\_to\_keep} + \text{fixed\_to\_remove} + (1 \mid \text{random})$$
+
+using `lme4::lmer()` (or `nlme::lme()` with `varIdent` variance weights
+when `col_HeteroSked` is supplied to allow different residual variances
+across a grouping variable). Each normalised feature is then
+reconstructed as the fitted contribution of `cols_listFixedToKeep` plus
+the model residuals—removing the estimated random effects and
+`cols_listFixedToRemove` fixed effects while retaining biological
+variation.
+
+**Required inputs:** All three data frames (`data`, `data_meta_samples`,
+and `data_meta_features` together with `col_features`) must be supplied
+when `plate_correction = TRUE`. Note that `data_meta_features` is used
+solely to match feature IDs against the column names of `data` (its
+other metadata columns are not used inside the mixed model).
+
+**Which variables go into each argument:**
+
+- `cols_listRandom`: technical grouping variables modelled as random
+  intercepts and **removed** (e.g., `"batch"`, `"plate"`, or nested
+  `c("batch", "plate")`).
+- `cols_listFixedToKeep`: biological or study-design covariates modelled
+  as fixed effects whose signal is **retained** in the normalised output
+  (e.g., `c("age", "center")`, `"bmi"`, `"country"`).
+- `cols_listFixedToRemove`: nuisance variables modelled as fixed effects
+  and **removed** (e.g., `"sex"`, `"fasting_status"`, or a low-level
+  technical covariate).
+- `col_HeteroSked` *(optional)*: a grouping column (must also appear in
+  `cols_listRandom`) across which residual variance is allowed to differ
+  via `nlme::lme()`.
 
 ```{r eval=FALSE}
 data_processed <- process_data(

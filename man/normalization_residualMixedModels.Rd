@@ -2,7 +2,7 @@
 % Please edit documentation in R/normalisation.R
 \name{normalization_residualMixedModels}
 \alias{normalization_residualMixedModels}
-\title{Normalize feature Data Using Residual Mixed Models}
+\title{Normalize Feature Data Using Residual Mixed Models}
 \usage{
 normalization_residualMixedModels(
   list,
@@ -14,7 +14,7 @@ normalization_residualMixedModels(
 )
 }
 \arguments{
-\item{list}{A list containing the following elements:
+\item{list}{A named list containing three elements:
 \describe{
 \item{data_features}{A data frame or tibble of dimensions n x (K+p) with:
 \describe{
@@ -22,34 +22,49 @@ normalization_residualMixedModels(
 \item{p}{Number of features.}
 \item{K}{Number of variables used for unique identification of individuals.}
 }}
-\item{data_samples}{A data frame or tibble of dimensions n x (K+d) with:
-\describe{
-\item{n}{Number of observations.}
-\item{K}{Number of unique identifiers.}
-\item{d}{Additional variables useful in final analysis (e.g., country, age, BMI).}
+\item{data_samples}{A data frame or tibble of dimensions n x (K+d) containing
+the sample identifier(s) and all covariates referenced in
+\code{listRandom}, \code{listFixedToKeep}, \code{listFixedToRemove}, and
+\code{HeteroSked}.}
+\item{data_meta_features}{A data frame containing at least a \code{Name}
+column listing the feature column names in \code{data_features} to be
+normalised (other metadata columns are not used by the mixed model).}
 }}
-\item{data_meta_features}{A p x 3 matrix indicating each feature's Name, Class, and Type.}
-}}
 
-\item{identifier}{A character vector of strings indicating the names of variables used for unique identification of individuals.}
+\item{identifier}{A character vector of column name(s) uniquely identifying
+samples in both \code{data_features} and \code{data_samples}.}
 
-\item{listRandom}{A character vector of strings containing variable names modeled as random effects to be removed. If not NULL, should be either of length 1 or contain nested variables.}
+\item{listRandom}{Character vector of column name(s) in \code{data_samples}
+modelled as random intercepts and \strong{removed} (e.g., \code{"plate"},
+\code{"batch"}, or nested grouping variables).}
 
-\item{listFixedToKeep}{A character vector of strings containing variable names modeled as fixed effects to be kept.}
+\item{listFixedToKeep}{Character vector of column name(s) in
+\code{data_samples} modelled as fixed effects whose contribution is
+\strong{retained} in the normalised output (e.g., biological covariates such as
+\code{c("age", "center")}).}
 
-\item{listFixedToRemove}{A character vector of strings containing variable names modeled as fixed effects to be removed.}
+\item{listFixedToRemove}{Optional character vector of column name(s) in
+\code{data_samples} modelled as fixed effects and \strong{removed} (e.g.,
+nuisance covariates such as \code{"sex"} or \code{"fasting_status"}).}
 
-\item{HeteroSked}{A string or NULL. If not NULL, the name of the variable for which heteroskedasticity will be accounted for. Must be included in \code{listRandom}.}
+\item{HeteroSked}{Optional character scalar naming a grouping column in
+\code{data_samples} (must also be in \code{listRandom}) for which
+group-specific residual variances are modelled via \code{nlme::lme()}.}
 }
 \value{
-A list with:
-\item{data}{A tibble with unwanted variation removed.}
-\item{data_samples}{The input 'data_samples' data frame, ordered by IdentifierPipeline.}
-\item{data_meta_features}{The input 'data_meta_features' matrix.}
+A tibble containing the sample identifier column(s) and the
+normalised feature columns in the same column order as
+\code{list$data_features}.
 }
 \description{
-This function normalizes feature data by removing unwanted effects using mixed models.
-It accounts for random effects and fixed effects specified by the user, and optionally
-corrects for heteroskedasticity. Residuals are calculated with \code{FUNnormalization_residualMixedModels()}.
-The method is details in \url{https://www.mdpi.com/2218-1989/11/9/631}
+Normalises omics feature data by fitting a per-feature linear mixed model
+(\code{Y ~ listFixedToKeep + listFixedToRemove + (1 | listRandom)}) via
+\code{lme4::lmer()} (or \code{nlme::lme()} with \code{varIdent} variance
+weights when \code{HeteroSked} is supplied), and reconstructing each feature
+as the fitted contribution of \code{listFixedToKeep} plus the model
+residuals. This removes technical random effects (\code{listRandom}) and
+unwanted fixed effects (\code{listFixedToRemove}) while preserving biological
+covariates (\code{listFixedToKeep}). Residuals are computed with
+\code{FUNnormalization_residualMixedModels()}. The method is detailed in
+\url{https://www.mdpi.com/2218-1989/11/9/631}.
 }

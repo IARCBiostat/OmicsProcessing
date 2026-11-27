@@ -70,15 +70,38 @@ process_data(
 
 \item{outlier}{A logical flag indicating whether outlier exclusion should be performed across features and samples. Default is \code{FALSE}.}
 
-\item{plate_correction}{A logical flag indicating whether plate correction should be performed. Default is \code{FALSE}.}
+\item{plate_correction}{Logical; if \code{TRUE}, performs linear mixed-model
+plate/batch correction via \code{\link[=normalization_residualMixedModels]{normalization_residualMixedModels()}}. For each
+feature \code{Y}, fits \code{Y ~ fixed_to_keep + fixed_to_remove + (1 | random)}
+using \code{lme4::lmer()} (or \code{nlme::lme()} with \code{varIdent}
+weights when \code{col_HeteroSked} is supplied), and reconstructs the
+normalised values as the fitted contribution of \code{cols_listFixedToKeep}
+plus the model residuals—removing random effects and unwanted fixed effects
+while retaining biological signal. Requires all three input data frames
+(\code{data}, \code{data_meta_samples}, and \code{data_meta_features} with
+\code{col_features}, though only the feature ID column of
+\code{data_meta_features} is used to match feature columns). Default is
+\code{FALSE}.}
 
-\item{cols_listRandom}{A string or vector specifying columns in \code{data_meta_samples} to be treated as random effects in plate correction (e.g., \code{"batch_plate"}).}
+\item{cols_listRandom}{Character string or vector specifying column(s) in
+\code{data_meta_samples} modelled as random intercepts and \strong{removed}
+(e.g., technical grouping variables such as \code{"plate"}, \code{"batch"},
+or \code{"batch_plate"}).}
 
-\item{cols_listFixedToKeep}{A vector specifying columns in \code{data_meta_samples} to be treated as fixed effects in plate correction and retained in the model (e.g., \code{c("Center", "Country")}).}
+\item{cols_listFixedToKeep}{Character vector specifying column(s) in
+\code{data_meta_samples} modelled as fixed effects whose effects are
+\strong{retained} in the normalised output (e.g., biological or study-design
+covariates such as \code{c("age", "center")} or \code{c("Center", "Country")}).}
 
-\item{cols_listFixedToRemove}{A vector specifying columns in \code{data_meta_samples} to be treated as fixed effects in plate correction and removed from the model. Default is \code{NULL}.}
+\item{cols_listFixedToRemove}{Optional character vector specifying column(s)
+in \code{data_meta_samples} modelled as fixed effects and \strong{removed}
+(e.g., nuisance covariates such as \code{"sex"} or \code{"fasting_status"}).
+Default is \code{NULL}.}
 
-\item{col_HeteroSked}{A string specifying the column in \code{data_meta_samples} to be used for heteroskedasticity correction.}
+\item{col_HeteroSked}{Optional character scalar specifying a grouping column
+in \code{data_meta_samples} (which must also be included in
+\code{cols_listRandom}) for which group-specific residual variances are
+modelled via \code{nlme::lme()}. Default is \code{NULL}.}
 
 \item{centre_scale}{A logical flag indicating whether to center and scale the data. Default is \code{FALSE}.}
 
